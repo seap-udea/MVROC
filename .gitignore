@@ -13,3 +13,4 @@ code/figures/figures_*
 **/gallapp/
 .venv/
 *.db
+*.parquet
