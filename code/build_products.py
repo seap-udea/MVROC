@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """Assemble MVROC pipeline products under pipeline/products/ from code/data
-and code/figures/figures_MOI_folding (plus figures_MOI selection/solutions).
+and code/figures (figures_nobs for MOI; figures_MOI / figures_MOI_folding for
+MOC and solutions).
 
 Run from the repository root:
-    python pipeline/build_products.py
+    python code/build_products.py
 """
 from __future__ import annotations
 
@@ -19,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "code" / "data"
 MOI = ROOT / "code" / "figures" / "figures_MOI"
 FOLD = ROOT / "code" / "figures" / "figures_MOI_folding"
+NOBS = ROOT / "code" / "figures" / "figures_nobs"
+OBS_SRC = DATA / "obs_sbn_X05_full.parquet"
 OUT = ROOT / "pipeline" / "products"
 
 # Catalogue column order from CATALOGUE.md (plus solution / classification).
@@ -588,8 +591,65 @@ def build_state() -> None:
     _print(f"  {n_written:,} rows → db_mvroc_state.parquet")
 
 
-def build_moi_moc_sol() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    _print("Building db_mvroc_moi / moc / sol …")
+def _nobs_provids() -> set[str]:
+    """Provids listed under figures/figures_nobs (including updateH/)."""
+    frames = []
+    main = NOBS / "asteroid_analysis_results.csv"
+    if not main.exists():
+        raise SystemExit(f"Missing MOI list: {main}")
+    frames.append(pd.read_csv(main, usecols=["provid"]))
+    update_h = NOBS / "updateH" / "asteroid_analysis_results.csv"
+    if update_h.exists():
+        frames.append(pd.read_csv(update_h, usecols=["provid"]))
+    provids: set[str] = set()
+    for frame in frames:
+        provids.update(frame["provid"].astype(str).str.strip().tolist())
+    return provids
+
+
+def build_moi() -> Path:
+    """MOI = figures_nobs objects; rows = their observations from the source parquet."""
+    _print("Building db_mvroc_moi.parquet …")
+    if not OBS_SRC.exists():
+        raise SystemExit(f"Missing source observations: {OBS_SRC}")
+    provids = _nobs_provids()
+    _print(f"  {len(provids):,} MOI provids from figures_nobs")
+
+    out_path = OUT / "db_mvroc_moi.parquet"
+    old_csv = OUT / "db_mvroc_moi.csv"
+    pf = pq.ParquetFile(OBS_SRC)
+    schema = pf.schema_arrow
+    writer = None
+    n_rows = 0
+    for i, batch in enumerate(pf.iter_batches(batch_size=400_000), start=1):
+        df = batch.to_pandas()
+        mask = df["provid"].notna() & df["provid"].astype(str).str.strip().isin(
+            provids
+        )
+        part = df.loc[mask]
+        if part.empty:
+            continue
+        table = pa.Table.from_pandas(part, schema=schema, preserve_index=False)
+        if writer is None:
+            writer = pq.ParquetWriter(out_path, schema, compression="zstd")
+        writer.write_table(table)
+        n_rows += len(part)
+        _print(f"  moi batch {i}: {n_rows:,} rows")
+    if writer is not None:
+        writer.close()
+    if old_csv.exists():
+        old_csv.unlink()
+    _print(f"  {n_rows:,} rows → db_mvroc_moi.parquet")
+    return out_path
+
+
+def build_moc_sol() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """MOC + SOL from figures_MOI / figures_MOI_folding.
+
+    Returns (object_meta, moc, sol). object_meta carries per-object fields used
+    by mvroc_catalogue (from the MOC selection, not the observation-level MOI).
+    """
+    _print("Building db_mvroc_moc / sol …")
     selection = pd.read_csv(MOI / "asteroid_selection.csv")
     selection["provid"] = selection["provid"].astype(str).str.strip()
     solutions = expand_solutions(pd.read_csv(MOI / "solutions.csv"))
@@ -597,75 +657,28 @@ def build_moi_moc_sol() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     results["provid"] = results["provid"].astype(str).str.strip()
     results["solution_id"] = results["solution_id"].astype(str).str.strip()
 
-    # MOI: one row per object of interest (selection + solutions summary).
-    moi = selection.copy()
+    object_meta = selection.copy()
     n_sol = solutions.groupby("provid").size().rename("n_solutions")
-    moi = moi.merge(n_sol, on="provid", how="left")
-    moi["n_solutions"] = moi["n_solutions"].fillna(0).astype(int)
+    object_meta = object_meta.merge(n_sol, on="provid", how="left")
+    object_meta["n_solutions"] = object_meta["n_solutions"].fillna(0).astype(int)
     periods = solutions.groupby("provid")["p_rot_h"].apply(
         lambda s: "/".join(f"{p:.6f}" for p in s)
     )
     sol_ids = solutions.groupby("provid")["solution_id"].apply(
         lambda s: "/".join(str(x) for x in s)
     )
-    moi = moi.merge(periods.rename("periods_h"), on="provid", how="left")
-    moi = moi.merge(sol_ids.rename("solutions"), on="provid", how="left")
-    moi_cols = [
-        "provid",
-        "epoch_utc_ini",
-        "epoch_utc_end",
-        "obs_duration",
-        "n_obs",
-        "n_obs_u",
-        "n_obs_g",
-        "n_obs_r",
-        "n_obs_i",
-        "n_obs_z",
-        "n_obs_y",
-        "p_rot_dem_h",
-        "votes_dem",
-        "n_series_dem",
-        "bands_dem",
-        "periods_dem_h",
-        "p_rot_h",
-        "chi2_nu",
-        "n_peaks",
-        "power",
-        "amp_ratio",
-        "amp_data",
-        "span_alias",
-        "solutions",
-        "periods_h",
-        "n_solutions",
-        "u-g",
-        "u-g_err",
-        "u-r",
-        "u-r_err",
-        "g-r",
-        "g-r_err",
-        "r-i",
-        "r-i_err",
-        "i-z",
-        "i-z_err",
-        "z-y",
-        "z-y_err",
-        "nightalias_tested",
-        "nightalias_stable",
-        "nightalias_band",
-    ]
-    moi = moi[[c for c in moi_cols if c in moi.columns]]
-    moi.to_csv(OUT / "db_mvroc_moi.csv", index=False)
-    _print(f"  {len(moi):,} rows → db_mvroc_moi.csv")
+    object_meta = object_meta.merge(periods.rename("periods_h"), on="provid", how="left")
+    object_meta = object_meta.merge(
+        sol_ids.rename("solutions"), on="provid", how="left"
+    )
 
-    # MOC: same set after visual selection of candidate light curves.
-    moc = moi[
+    moc = object_meta[
         ["provid", "n_obs", "n_solutions", "solutions", "periods_h", "p_rot_dem_h"]
     ].copy()
     moc["selection"] = "visual_folding"
     moc.to_csv(OUT / "db_mvroc_moc.csv", index=False)
     _print(f"  {len(moc):,} rows → db_mvroc_moc.csv")
 
-    # SOL: one row per MVROC solution (fold + shape when available).
     sol = solutions.merge(
         results,
         on=["provid", "solution_id"],
@@ -675,17 +688,16 @@ def build_moi_moc_sol() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     if "p_rot_h_res" in sol.columns:
         sol["p_rot_h"] = sol["p_rot_h"].fillna(sol["p_rot_h_res"])
         sol = sol.drop(columns=["p_rot_h_res"])
-    # Classification placeholders (human tags not yet assigned).
     sol["tags"] = ""
     sol["Q"] = np.nan
     sol["use_band"] = ""
     sol.to_csv(OUT / "db_mvroc_sol.csv", index=False)
     _print(f"  {len(sol):,} rows → db_mvroc_sol.csv")
-    return moi, moc, sol
+    return object_meta, moc, sol
 
 
 def build_catalogue(
-    moi: pd.DataFrame,
+    object_meta: pd.DataFrame,
     sol: pd.DataFrame,
     orbits: pd.DataFrame,
     db_vro_mpc: pd.DataFrame,
@@ -698,8 +710,8 @@ def build_catalogue(
     sbdb = pivot_sbdb(DATA / "sbdb_physical_properties.csv")
     gst = greenstreet_periods(DATA / "asteroids-with-rotation.csv")
 
-    # Object-level fields from MOI selection.
-    obj = moi.copy()
+    # Object-level fields from the MOC selection (not observation-level MOI).
+    obj = object_meta.copy()
     # Mean H / designation from colors.parquet
     h_cols = ["H_u", "H_g", "H_r", "H_i", "H_z", "H_y"]
     color_obj = colors[["provid", "mpc_designation", "permid", *h_cols]].rename(
@@ -819,6 +831,7 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--skip-state", action="store_true")
     parser.add_argument("--skip-orbits", action="store_true")
     parser.add_argument("--skip-crossmatch", action="store_true")
+    parser.add_argument("--skip-moi", action="store_true")
     args = parser.parse_args(argv)
 
     OUT.mkdir(parents=True, exist_ok=True)
@@ -840,8 +853,13 @@ def main(argv: list[str] | None = None) -> None:
     else:
         _print("Skipping db_mvroc_state.parquet")
 
-    moi, moc, sol = build_moi_moc_sol()
-    build_catalogue(moi, sol, orbits, db_vro_mpc)
+    if not args.skip_moi:
+        build_moi()
+    else:
+        _print("Skipping db_mvroc_moi.parquet")
+
+    object_meta, moc, sol = build_moc_sol()
+    build_catalogue(object_meta, sol, orbits, db_vro_mpc)
     _print("Done.")
 
 

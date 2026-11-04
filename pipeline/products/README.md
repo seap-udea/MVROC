@@ -1,21 +1,19 @@
 # MVROC pipeline products — summary
 
-Snapshot of the tables under `pipeline/products/` for the first catalogue build.
-Generated from the files present in this directory (Rubin MPC release used in the
-pipeline docs; MOI selection from `code/figures/figures_MOI`).
+Result of the MVROC pipeline run of **4 November 2026**.
+
+Input observations: `code/data/obs_sbn_X05_full.parquet` (downloaded **12 October 2026**; 8 078 546 rows). Candidate light curves (MOC) from `code/figures/figures_MOI`.
 
 | File | Format | Rows | Role |
 |---|---|---:|---|
+| `code/data/obs_sbn_X05_full.parquet` | Parquet | 8 078 546 | Original Rubin MPC observations (12 October 2026) |
 | `db_vro_mpc.csv` | CSV | 300 952 | Rubin ↔ MPC equivalence |
-| `info_vro_mpc.md` | Markdown | — | Cross-match report |
 | `db_mvroc_orbits.csv` | CSV | 298 225 | Orbital elements per MPC object |
-| `db_mvroc_state.parquet` | Parquet | 8 021 267 | Per-observation geometry + \(H\) |
-| `db_mvroc_moi.csv` | CSV | 703 | Objects of interest (one row / object) |
-| `db_mvroc_moc.csv` | CSV | 703 | Objects with candidate light curves |
+| `db_mvroc_state.parquet` | Parquet | 8 021 267 | Per-observation geometry + H |
+| `db_mvroc_moi.parquet` | Parquet | 1 962 044 obs<br>(8 000 objects) | MOI observations (objects in `figures/figures_nobs`; same columns as the source parquet) |
+| `db_mvroc_moc.csv` | CSV | 703 | MOC: objects with candidate light curves (visual selection) |
 | `db_mvroc_sol.csv` | CSV | 1 092 | Rotation solutions (one row / solution) |
 | `mvroc_catalogue.csv` | CSV | 1 092 | Public catalogue join (one row / solution) |
-
-Rebuild with `python pipeline/build_products.py` from the repository root.
 
 ---
 
@@ -31,7 +29,7 @@ Equivalence table from pipeline step 2 (Rubin–MPC cross-match).
 | `match_kind` | `numbered` or `provisional` |
 | `n_vro_for_mpc` | How many Rubin ids map to this MPC designation |
 
-**Counts:** 300 951 unique `provid_vro`, 297 966 unique `provid_mpc`. About 2 986 MPC objects gather two Rubin provids (see `info_vro_mpc.md`).
+**Counts:** 300 951 unique `provid_vro`, 297 966 unique `provid_mpc`. About 2 986 MPC objects gather two Rubin provids.
 
 ---
 
@@ -73,42 +71,55 @@ Primary key: observation `id`.
 | `delta` | au | Geocentric distance |
 | `alpha` | deg | Phase angle |
 | `mag` | mag | Apparent magnitude |
-| `H` | mag | Absolute magnitude (\(G=0.15\)) |
+| `H` | mag | Absolute magnitude (G = 0.15) |
 | `flag_updated` | | Recompute flag for incremental updates |
 
 Size on disk ≈ 472 MB. `*.parquet` is gitignored.
 
 ---
 
-## `db_mvroc_moi.csv`
+## `db_mvroc_moi.parquet`
 
-MVROC Objects of Interest: asteroids with \(N_{\mathrm{obs}}\ge 100\) that passed visual
-folding selection (703 objects). One row per object, with observation window,
-voted period, preferred harmonic fold, colours, and the list of kept solutions.
+**MOI — MVROC Objects of Interest.** Objects processed in
+`code/figures/figures_nobs` (including `updateH/`), i.e. the N_obs ≥ 100
+selection of the pipeline — **not** the visually selected rotation candidates
+(those are MOC).
 
-**Sample:** \(N_{\mathrm{obs}}\) from 100 to 765 (median 351). Photometry span
-2025-04-22 → 2026-04-15.
+One row per observation. Columns are exactly those of the source file
+`code/data/obs_sbn_X05_full.parquet` (90 columns). This build:
 
-Main column groups: `epoch_utc_*`, `n_obs_*`, democratic vote (`p_rot_dem_h`,
-`votes_dem`, …), preferred fold (`p_rot_h`, `chi2_nu`, …), colours (`g-r`, …),
-and `solutions` / `periods_h` / `n_solutions`.
+| Quantity | Value |
+|---|---|
+| Distinct objects (`provid_mpc`) | 8 000 |
+| Distinct `provid` | 8 010 |
+| Observation rows | 1 962 044 |
+| File size | ≈ 143 MB |
+
+Ten MPC designations gather two Rubin `provid` each; counting unique `provid_mpc` gives 8 000 physical objects.
+
+Photometric periods, colours, and shape fits are **not** stored here; they
+appear later in `db_mvroc_moc.csv`, `db_mvroc_sol.csv`, and `mvroc_catalogue.csv`.
 
 ---
 
 ## `db_mvroc_moc.csv`
 
-MVROC Objects with Candidate light curves after visual review. Same 703 objects
-as MOI, slimmed to selection metadata:
+**MOC — MVROC Objects with Candidate light curves.** Objects whose folded light
+curves were retained after visual review (703 asteroids in this build).
 
-`provid`, `n_obs`, `n_solutions`, `solutions`, `periods_h`, `p_rot_dem_h`, `selection`.
+Columns: `provid`, `n_obs`, `n_solutions`, `solutions`, `periods_h`,
+`p_rot_dem_h`, `selection`.
+
+**Sample (this build):** N_obs from 100 to 765 (median 351).
+Photometry span 2025-04-22 → 2026-04-15.
 
 ---
 
 ## `db_mvroc_sol.csv`
 
-MVROC Solutions: one row per retained rotation period (1 092 solutions for 703
-objects). Includes fold diagnostics, colours from the joint fit, and shape-fit
-parameters (contact binary + ellipsoid).
+MVROC Solutions: one row per retained rotation period (1 092 solutions for the
+703 MOC objects). Includes fold diagnostics, colours from the joint fit, and
+shape-fit parameters (contact binary + ellipsoid).
 
 | Solutions per object | Objects |
 |---:|---:|
@@ -135,7 +146,7 @@ information described in `CATALOGUE.md` joined onto each solution.
 | Columns | 137 |
 | Unique objects | 703 |
 | Orbits filled (`a`) | 100% |
-| \(H_r\) filled | 98.8% |
+| H_r filled | 98.8% |
 | Shape `q_sph_k` filled | 99.5% |
 | Greenstreet period match | 56 objects |
 | SBDB `rot_per` match | 18 objects |
@@ -143,7 +154,7 @@ information described in `CATALOGUE.md` joined onto each solution.
 ### Column blocks
 
 1. **Identification** — `provid`, `solution_id`, `permid`, `mpc_designation`
-2. **Observations** — `epoch_utc_ini/end`, `n_obs`, `n_obs_{u,g,r,i,z,y}`
+2. **Observations** — `epoch_utc_ini/end`, `n_obs`, `n_obs_u` … `n_obs_y`
 3. **Orbit** — `epoch_tdb`, `a`, `e`, `q`, `incl`, `node`, `peri`, `M`
 4. **Mean absolute magnitudes** — `H_u` … `H_y`
 5. **Phase-corrected colours** — `u-g`, `u-r`, `g-r`, `r-i`, `i-z`, `z-y` (+ `_err`)
@@ -152,7 +163,7 @@ information described in `CATALOGUE.md` joined onto each solution.
 8. **Multiband Lk** — reserved (`p_rot_multi_*`, …); empty in this build
 9. **Shape** — spheres (`q_sph_k`, `phi_sph_deg_k`, …) and ellipsoid (`b_over_a_k`, …)
 10. **Classification** — `tags`, `Q`, `use_band` (empty until tagging)
-11. **Reflectance** — `{b}-r_spec`, `R_{b}`, `n_{b}_spec` for \(b\in\{g,i,z,y\}\)
+11. **Reflectance** — `{b}-r_spec`, `R_b`, `n_b_spec` for b ∈ {g, i, z, y}
 12. **SBDB** — `H_sbdb`, `albedo_sbdb`, `rot_per_sbdb`, taxonomy, …
 13. **Greenstreet** — `rot_per_lsm_gst`, `rot_per_fr_gst`
 14. **Dynamics** — `res_*` reserved (all NaN)
