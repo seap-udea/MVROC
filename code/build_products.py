@@ -70,32 +70,13 @@ CATALOGUE_COLUMNS = [
     "i-z_err",
     "z-y",
     "z-y_err",
-    # Rotation: voted period
-    "p_rot_dem_h",
-    "votes_dem",
-    "n_series_dem",
-    "bands_dem",
-    "periods_dem_h",
+    # Photometric taxonomy (gri slope; coarse C/S/D complex)
+    "gri_slope",
+    "photo_spec_T",
     # Rotation: adopted solution (fold)
     "p_rot_h",
     "chi2_nu",
-    "n_peaks",
-    "power",
-    "amp",
-    "amp_ratio",
-    "amp_data",
-    "scatter",
-    "span_alias",
-    "alias_label",
-    "filters",
-    "n_filters",
-    "ref_filter",
-    # Rotation: multiband Lk (filled when available)
-    "p_rot_multi_used_h",
-    "p_rot_multi_h",
-    "f_rot_multi",
-    "k_harm_multi",
-    "bic",
+    # Rotation: multiband Lk amplitudes / residuals (filled when available)
     "amp_lsm_k",
     "amp_photo_k",
     "rms_multi",
@@ -122,27 +103,6 @@ CATALOGUE_COLUMNS = [
     "tags",
     "Q",
     "use_band",
-    # Reflectance
-    "g-r_spec",
-    "g-r_spec_err",
-    "R_g",
-    "R_g_err",
-    "n_g_spec",
-    "i-r_spec",
-    "i-r_spec_err",
-    "R_i",
-    "R_i_err",
-    "n_i_spec",
-    "z-r_spec",
-    "z-r_spec_err",
-    "R_z",
-    "R_z_err",
-    "n_z_spec",
-    "y-r_spec",
-    "y-r_spec_err",
-    "R_y",
-    "R_y_err",
-    "n_y_spec",
     # SBDB
     "H_sbdb",
     "H_sbdb_err",
@@ -171,13 +131,14 @@ CATALOGUE_COLUMNS = [
     # Greenstreet
     "rot_per_lsm_gst",
     "rot_per_fr_gst",
-    # Dynamics (reserved)
-    "res_body",
-    "res_flag",
-    "res_type",
-    "res_kp",
-    "res_k",
-    "res_orbit",
+    # Dynamics (osculating elements; resonance is a proximity flag)
+    "dyn_class",
+    "T_earth",
+    "T_mars",
+    "T_jup",
+    "T_nep",
+    "flag_resonant",
+    "resonant_ratio",
 ]
 
 SHAPE_RENAME = {
@@ -200,6 +161,149 @@ SHAPE_RENAME = {
 }
 
 SOLAR_COLOR = {"g": 0.45, "i": -0.12, "z": -0.16, "y": -0.18}
+
+# Mean heliocentric distances (au) used in the Tisserand parameter.
+A_EARTH = 1.000
+A_MARS = 1.524
+A_JUP = 5.204
+A_NEP = 30.07
+
+# Jupiter MMRs: (label, asteroid revs, Jupiter revs, half-width in au).
+# a0 = A_JUP * (n_jup / n_ast) ** (2/3). Wide islands for 3:2, 4:3, and 1:1;
+# narrow windows for the Kirkwood gaps.
+_JUPITER_MMR = (
+    ("4:1", 4, 1, 0.03),
+    ("3:1", 3, 1, 0.03),
+    ("5:2", 5, 2, 0.03),
+    ("7:3", 7, 3, 0.03),
+    ("2:1", 2, 1, 0.04),
+    ("3:2", 3, 2, 0.15),
+    ("4:3", 4, 3, 0.08),
+    ("1:1", 1, 1, 0.25),
+)
+
+# gri slope (% per 100 nm) of the C, S, and D sketches in catalogue_pipeline.spectrum.
+_LSST_G_NM = 483.0
+_LSST_I_NM = 755.0
+_GRI_SLOPE_C = 1.25
+_GRI_SLOPE_S = 14.6
+_GRI_SLOPE_D = 22.5
+
+
+def tisserand(a: np.ndarray, e: np.ndarray, incl_deg: np.ndarray, a_planet: float) -> np.ndarray:
+    """Tisserand parameter w.r.t. a planet, from osculating a (au), e, i (deg)."""
+    a = np.asarray(a, dtype=float)
+    e = np.asarray(e, dtype=float)
+    incl = np.deg2rad(np.asarray(incl_deg, dtype=float))
+    ok = np.isfinite(a) & (a > 0) & np.isfinite(e) & (e < 1) & np.isfinite(incl)
+    out = np.full(a.shape, np.nan)
+    cos_i = np.cos(incl[ok])
+    out[ok] = a_planet / a[ok] + 2.0 * cos_i * np.sqrt((a[ok] / a_planet) * (1.0 - e[ok] ** 2))
+    return out
+
+
+def _mmr_centres() -> list[tuple[str, float, float]]:
+    centres = []
+    for label, n_ast, n_jup, half in _JUPITER_MMR:
+        a0 = A_JUP * (n_jup / n_ast) ** (2.0 / 3.0)
+        centres.append((label, a0, half))
+    return centres
+
+
+def resonant_ratio_of(a: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Nearest Jupiter MMR inside its half-width. Returns (flag 0/1, ratio or '')."""
+    a = np.asarray(a, dtype=float)
+    flag = np.zeros(a.shape, dtype=int)
+    ratio = np.full(a.shape, "", dtype=object)
+    centres = _mmr_centres()
+    score = np.full(a.shape, np.inf)
+    for label, a0, half in centres:
+        dist = np.abs(a - a0)
+        hit = np.isfinite(a) & (dist <= half) & ((dist / half) < score)
+        score[hit] = dist[hit] / half
+        flag[hit] = 1
+        ratio[hit] = label
+    return flag, ratio
+
+
+def dynamical_class(a: np.ndarray, e: np.ndarray, incl: np.ndarray, q: np.ndarray) -> np.ndarray:
+    """Population label from osculating elements. First match wins."""
+    a = np.asarray(a, dtype=float)
+    incl = np.asarray(incl, dtype=float)
+    q = np.asarray(q, dtype=float)
+    labels = np.full(a.shape, "", dtype=object)
+    finite = np.isfinite(a) & np.isfinite(q) & np.isfinite(incl)
+    labels[finite] = "Other"
+    rules = (
+        ("TNO", finite & (a >= 30.1)),
+        ("Trojan", finite & (a >= 4.95) & (a <= 5.45)),
+        ("Centaur", finite & (a > 5.45) & (a < 30.1)),
+        ("Thule", finite & (a >= 4.20) & (a < 4.50)),
+        ("Hilda", finite & (a >= 3.70) & (a < 4.20)),
+        ("Cybele", finite & (a >= 3.28) & (a < 3.70)),
+        ("NEA", finite & (q < 1.3)),
+        ("Hungaria", finite & (a >= 1.78) & (a < 2.06) & (incl >= 16) & (q >= 1.3)),
+        ("Mars-crosser", finite & (q < 1.666) & (a < 2.06)),
+        ("InnerMB", finite & (a >= 2.06) & (a < 2.50)),
+        ("MiddleMB", finite & (a >= 2.50) & (a < 2.82)),
+        ("OuterMB", finite & (a >= 2.82) & (a < 3.28)),
+    )
+    assigned = np.zeros(a.shape, dtype=bool)
+    for name, mask in rules:
+        take = mask & ~assigned
+        labels[take] = name
+        assigned |= take
+    return labels
+
+
+def gri_slope_and_class(g_r: np.ndarray, r_i: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Solar-normalized g–i slope (%/100 nm) and nearest C/S/D template."""
+    g_r = np.asarray(g_r, dtype=float)
+    r_i = np.asarray(r_i, dtype=float)
+    ok = np.isfinite(g_r) & np.isfinite(r_i)
+    r_g = np.full(g_r.shape, np.nan)
+    r_i_ref = np.full(g_r.shape, np.nan)
+    # R(b)/R(r) = 10^(-0.4 * ((m_b - m_r) - solar)).
+    r_g[ok] = 10.0 ** (-0.4 * (g_r[ok] - SOLAR_COLOR["g"]))
+    i_minus_r = -r_i
+    r_i_ref[ok] = 10.0 ** (-0.4 * (i_minus_r[ok] - SOLAR_COLOR["i"]))
+    slope = np.full(g_r.shape, np.nan)
+    slope[ok] = (r_i_ref[ok] - r_g[ok]) / (_LSST_I_NM - _LSST_G_NM) * 1.0e4
+    spec = np.full(g_r.shape, "", dtype=object)
+    # Midpoints between the C, S, and D template slopes.
+    c_s = 0.5 * (_GRI_SLOPE_C + _GRI_SLOPE_S)
+    s_d = 0.5 * (_GRI_SLOPE_S + _GRI_SLOPE_D)
+    spec[ok & (slope < c_s)] = "C"
+    spec[ok & (slope >= c_s) & (slope < s_d)] = "S"
+    spec[ok & (slope >= s_d)] = "D"
+    return slope, spec
+
+
+def add_dynamical_columns(cat: pd.DataFrame) -> pd.DataFrame:
+    cat = cat.copy()
+    a = cat["a"] if "a" in cat.columns else np.nan
+    e = cat["e"] if "e" in cat.columns else np.nan
+    incl = cat["incl"] if "incl" in cat.columns else np.nan
+    q = cat["q"] if "q" in cat.columns else np.nan
+    cat["dyn_class"] = dynamical_class(a, e, incl, q)
+    cat["T_earth"] = tisserand(a, e, incl, A_EARTH)
+    cat["T_mars"] = tisserand(a, e, incl, A_MARS)
+    cat["T_jup"] = tisserand(a, e, incl, A_JUP)
+    cat["T_nep"] = tisserand(a, e, incl, A_NEP)
+    flag, ratio = resonant_ratio_of(cat["a"].to_numpy(dtype=float) if "a" in cat.columns else np.array([]))
+    cat["flag_resonant"] = flag
+    cat["resonant_ratio"] = ratio
+    return cat
+
+
+def add_taxonomy_columns(cat: pd.DataFrame) -> pd.DataFrame:
+    cat = cat.copy()
+    g_r = cat["g-r"] if "g-r" in cat.columns else np.nan
+    r_i = cat["r-i"] if "r-i" in cat.columns else np.nan
+    slope, spec = gri_slope_and_class(g_r, r_i)
+    cat["gri_slope"] = slope
+    cat["photo_spec_T"] = spec
+    return cat
 
 
 def _print(msg: str) -> None:
@@ -764,11 +868,6 @@ def build_catalogue(
     for col in (
         "p_rot_h",
         "chi2_nu",
-        "n_peaks",
-        "power",
-        "amp_ratio",
-        "amp_data",
-        "span_alias",
         "g-r",
         "g-r_err",
         "r-i",
@@ -783,27 +882,12 @@ def build_catalogue(
     # Rename shape columns to catalogue (_k) names.
     cat = cat.rename(columns=SHAPE_RENAME)
 
-    # Reflectance and literature.
+    # Literature cross-matches.
     cat = cat.merge(sbdb, on="provid", how="left")
     cat = cat.merge(gst, on="provid", how="left")
-    ref_rows = [reflectance_from_colors(row) for _, row in cat.iterrows()]
-    cat = pd.concat([cat.reset_index(drop=True), pd.DataFrame(ref_rows)], axis=1)
 
-    # Dynamics reserved.
-    for col in ("res_body", "res_flag", "res_type", "res_kp", "res_k", "res_orbit"):
-        cat[col] = np.nan
-    # Multiband Lk block not produced in the MOI folding run.
-    for col in (
-        "p_rot_multi_used_h",
-        "p_rot_multi_h",
-        "f_rot_multi",
-        "k_harm_multi",
-        "bic",
-        "amp_lsm_k",
-        "amp_photo_k",
-        "rms_multi",
-        "n_outliers_multi",
-    ):
+    # Multiband Lk amplitudes / residuals (not produced in the MOI folding run).
+    for col in ("amp_lsm_k", "amp_photo_k", "rms_multi", "n_outliers_multi"):
         if col not in cat.columns:
             cat[col] = np.nan
     if "tags" not in cat.columns:
@@ -812,6 +896,9 @@ def build_catalogue(
         cat["Q"] = np.nan
     if "use_band" not in cat.columns:
         cat["use_band"] = ""
+
+    cat = add_dynamical_columns(cat)
+    cat = add_taxonomy_columns(cat)
 
     # Keep only catalogue columns, in documented order.
     for col in CATALOGUE_COLUMNS:

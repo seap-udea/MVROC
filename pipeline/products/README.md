@@ -2,15 +2,15 @@
 
 Result of the MVROC pipeline run of **4 November 2026**.
 
-Input observations: `code/data/obs_sbn_X05_full.parquet` (downloaded **12 October 2026**; 8 078 546 rows). Candidate light curves (MOC) from `code/figures/figures_MOI`.
+Input observations downloaded **12 October 2026** (8 078 546 rows). The large parquet tables are in [this Google Drive folder](https://drive.google.com/drive/folders/1l99VF8mxHfaqc82aR4SSCKunrfRnXzCZ?usp=sharing).
 
 | File | Format | Rows | Role |
 |---|---|---:|---|
-| `code/data/obs_sbn_X05_full.parquet` | Parquet | 8 078 546 | Original Rubin MPC observations (12 October 2026) |
+| `obs_sbn_X05_full.parquet` | Parquet | 8 078 546 | Original Rubin MPC observations (12 October 2026). On Google Drive. |
 | `db_vro_mpc.csv` | CSV | 300 952 | Rubin ↔ MPC equivalence |
 | `db_mvroc_orbits.csv` | CSV | 298 225 | Orbital elements per MPC object |
-| `db_mvroc_state.parquet` | Parquet | 8 021 267 | Per-observation geometry + H |
-| `db_mvroc_moi.parquet` | Parquet | 1 962 044 obs<br>(8 000 objects) | MOI observations (objects in `figures/figures_nobs`; same columns as the source parquet) |
+| `db_mvroc_state.parquet` | Parquet | 8 021 267 | Per-observation geometry + H. On Google Drive. |
+| `db_mvroc_moi.parquet` | Parquet | 1 962 044 obs<br>(8 000 objects) | MOI observations (same columns as the source table). On Google Drive. |
 | `db_mvroc_moc.csv` | CSV | 703 | MOC: objects with candidate light curves (visual selection) |
 | `db_mvroc_sol.csv` | CSV | 1 092 | Rotation solutions (one row / solution) |
 | `mvroc_catalogue.csv` | CSV | 1 092 | Public catalogue join (one row / solution) |
@@ -19,7 +19,7 @@ Input observations: `code/data/obs_sbn_X05_full.parquet` (downloaded **12 Octobe
 
 ## `db_vro_mpc.csv`
 
-Equivalence table from pipeline step 2 (Rubin–MPC cross-match).
+Equivalence table between Rubin designations and MPC designations.
 
 | Column | Meaning |
 |---|---|
@@ -35,7 +35,7 @@ Equivalence table from pipeline step 2 (Rubin–MPC cross-match).
 
 ## `db_mvroc_orbits.csv`
 
-Orbital elements at the reported epoch for each `provid_mpc` (pipeline step 3).
+Orbital elements at the reported epoch for each `provid_mpc`.
 
 | Column | Unit | Meaning |
 |---|---|---|
@@ -55,8 +55,8 @@ Orbital elements at the reported epoch for each `provid_mpc` (pipeline step 3).
 
 ## `db_mvroc_state.parquet`
 
-One row per observation with geometry and absolute magnitude (pipeline steps 4–5).
-Primary key: observation `id`.
+One row per observation with geometry and absolute magnitude.
+Primary key: observation `id`. The file is in the [Google Drive folder](https://drive.google.com/drive/folders/1l99VF8mxHfaqc82aR4SSCKunrfRnXzCZ?usp=sharing) (≈ 472 MB).
 
 | Column | Unit | Meaning |
 |---|---|---|
@@ -74,19 +74,13 @@ Primary key: observation `id`.
 | `H` | mag | Absolute magnitude (G = 0.15) |
 | `flag_updated` | | Recompute flag for incremental updates |
 
-Size on disk ≈ 472 MB. `*.parquet` is gitignored.
-
 ---
 
 ## `db_mvroc_moi.parquet`
 
-**MOI — MVROC Objects of Interest.** Objects processed in
-`code/figures/figures_nobs` (including `updateH/`), i.e. the N_obs ≥ 100
-selection of the pipeline — **not** the visually selected rotation candidates
-(those are MOC).
+**MOI — MVROC Objects of Interest.** The N_obs ≥ 100 selection, including the absolute-magnitude update. These are not the visually selected rotation candidates (those are MOC).
 
-One row per observation. Columns are exactly those of the source file
-`code/data/obs_sbn_X05_full.parquet` (90 columns). This build:
+One row per observation, with the same 90 columns as the source observation table. The file is in the [Google Drive folder](https://drive.google.com/drive/folders/1l99VF8mxHfaqc82aR4SSCKunrfRnXzCZ?usp=sharing) (≈ 143 MB). This build:
 
 | Quantity | Value |
 |---|---|
@@ -130,20 +124,18 @@ shape-fit parameters (contact binary + ellipsoid).
 
 **Period range:** 0.063–44.1 h (median ≈ 4.85 h).
 
-Classification columns `tags`, `Q`, and `use_band` are reserved (empty in this
-build; see `code/CLASSIFICATION.md`).
+Classification columns `tags`, `Q`, and `use_band` are reserved and empty in this build.
 
 ---
 
 ## `mvroc_catalogue.csv`
 
-End product of the pipeline: **one row per solution**, with the full object
-information described in `CATALOGUE.md` joined onto each solution.
+End product: **one row per solution**, with the object information joined onto each solution.
 
 | Quantity | Value |
 |---|---|
 | Rows (solutions) | 1 092 |
-| Columns | 137 |
+| Columns | 99 |
 | Unique objects | 703 |
 | Orbits filled (`a`) | 100% |
 | H_r filled | 98.8% |
@@ -154,21 +146,16 @@ information described in `CATALOGUE.md` joined onto each solution.
 ### Column blocks
 
 1. **Identification** — `provid`, `solution_id`, `permid`, `mpc_designation`
-2. **Observations** — `epoch_utc_ini/end`, `n_obs`, `n_obs_u` … `n_obs_y`
+2. **Observations** — `epoch_utc_ini`, `epoch_utc_end`, `n_obs`, `n_obs_u`, `n_obs_g`, `n_obs_r`, `n_obs_i`, `n_obs_z`, `n_obs_y`
 3. **Orbit** — `epoch_tdb`, `a`, `e`, `q`, `incl`, `node`, `peri`, `M`
-4. **Mean absolute magnitudes** — `H_u` … `H_y`
-5. **Phase-corrected colours** — `u-g`, `u-r`, `g-r`, `r-i`, `i-z`, `z-y` (+ `_err`)
-6. **Voted period** — `p_rot_dem_h`, `votes_dem`, `n_series_dem`, `bands_dem`, `periods_dem_h`
-7. **Adopted solution** — `p_rot_h`, `chi2_nu`, `power`, `amp*`, `span_alias`, …
-8. **Multiband Lk** — reserved (`p_rot_multi_*`, …); empty in this build
-9. **Shape** — spheres (`q_sph_k`, `phi_sph_deg_k`, …) and ellipsoid (`b_over_a_k`, …)
-10. **Classification** — `tags`, `Q`, `use_band` (empty until tagging)
-11. **Reflectance** — `{b}-r_spec`, `R_b`, `n_b_spec` for b ∈ {g, i, z, y}
-12. **SBDB** — `H_sbdb`, `albedo_sbdb`, `rot_per_sbdb`, taxonomy, …
+4. **Mean absolute magnitudes** — `H_u`, `H_g`, `H_r`, `H_i`, `H_z`, `H_y`
+5. **Phase-corrected colours** — `u-g`, `u-g_err`, `u-r`, `u-r_err`, `g-r`, `g-r_err`, `r-i`, `r-i_err`, `i-z`, `i-z_err`, `z-y`, `z-y_err`
+6. **Photometric taxonomy** — `gri_slope`, `photo_spec_T`
+7. **Adopted solution** — `p_rot_h`, `chi2_nu`
+8. **Multiband Lk** — `amp_lsm_k`, `amp_photo_k`, `rms_multi`, `n_outliers_multi`
+9. **Shape, spheres** — `q_sph_k`, `q_sph_err_k`, `phi_sph_deg_k`, `phi_sph_err_deg_k`, `chi_r_sph_k`, `amp_sph_k`, `m_mid_sph_k`, `m_sep_k`, `p_rot_sph_h_k`
+10. **Shape, ellipsoid** — `b_over_a_k`, `b_over_a_err_k`, `amp_ell_k`, `m_mid_ell_k`, `m_ab_k`, `p_rot_ell_h_k`, `chi_r_ell_k`
+11. **Classification** — `tags`, `Q`, `use_band`
+12. **SBDB** — `H_sbdb`, `H_sbdb_err`, `albedo_sbdb`, `albedo_sbdb_err`, `diameter_sbdb`, `diameter_sbdb_err`, `extent_sbdb`, `extent_sbdb_err`, `pole_sbdb`, `pole_sbdb_err`, `density_sbdb`, `density_sbdb_err`, `rot_per_sbdb`, `rot_per_sbdb_err`, `GM_sbdb`, `GM_sbdb_err`, `BV_sbdb`, `BV_sbdb_err`, `UB_sbdb`, `UB_sbdb_err`, `spec_B_sbdb`, `spec_B_sbdb_err`, `spec_T_sbdb`, `spec_T_sbdb_err`
 13. **Greenstreet** — `rot_per_lsm_gst`, `rot_per_fr_gst`
-14. **Dynamics** — `res_*` reserved (all NaN)
-
-For the detailed meaning of each catalogue column, see
-[`CATALOGUE.md`](../../CATALOGUE.md) at the repository root.
-For the pipeline steps that produce these tables, see
-[`code/PIPELINE.md`](../../code/PIPELINE.md).
+14. **Dynamics** — `dyn_class`, `T_earth`, `T_mars`, `T_jup`, `T_nep`, `flag_resonant`, `resonant_ratio`
