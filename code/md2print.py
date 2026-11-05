@@ -7,9 +7,9 @@ next to the Markdown source.
 
 Examples
 --------
-  python md2print.py code/PIPELINE.md
-  python md2print.py CATALOGUE.md --pdf /tmp/catalogue.pdf
-  python md2print.py README.md -o /tmp/readme-print.html
+  python code/md2print.py code/PIPELINE.md
+  python code/md2print.py CATALOGUE.md --pdf /tmp/catalogue.pdf
+  python code/md2print.py README.md -o /tmp/readme-print.html
 """
 
 from __future__ import annotations

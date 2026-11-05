@@ -13,7 +13,7 @@ Input observations downloaded **12 October 2026** (8 078 546 rows). The larg
 | `db_mvroc_moi.parquet` | Parquet | 1 962 044 obs<br>(8 000 objects) | MOI observations (same columns as the source table). On Google Drive. |
 | `db_mvroc_moc.csv` | CSV | 703 | MOC: objects with candidate light curves (visual selection) |
 | `db_mvroc_sol.csv` | CSV | 1 092 | Rotation solutions (one row / solution) |
-| `mvroc_catalogue.csv` | CSV | 1 092 | Public catalogue join (one row / solution) |
+| `mvroc.csv` | CSV | 1 092 | Public catalogue join (one row / solution) |
 
 ---
 
@@ -92,7 +92,7 @@ One row per observation, with the same 90 columns as the source observation tabl
 Ten MPC designations gather two Rubin `provid` each; counting unique `provid_mpc` gives 8 000 physical objects.
 
 Photometric periods, colours, and shape fits are **not** stored here; they
-appear later in `db_mvroc_moc.csv`, `db_mvroc_sol.csv`, and `mvroc_catalogue.csv`.
+appear later in `db_mvroc_moc.csv`, `db_mvroc_sol.csv`, and `mvroc.csv`.
 
 ---
 
@@ -128,7 +128,7 @@ Classification columns `tags`, `Q`, and `use_band` are reserved and empty in thi
 
 ---
 
-## `mvroc_catalogue.csv`
+## `mvroc.csv`
 
 End product: **one row per solution**, with the object information joined onto each solution.
 

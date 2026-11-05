@@ -768,7 +768,7 @@ def build_moc_sol() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """MOC + SOL from figures_MOI / figures_MOI_folding.
 
     Returns (object_meta, moc, sol). object_meta carries per-object fields used
-    by mvroc_catalogue (from the MOC selection, not the observation-level MOI).
+    by mvroc.csv (from the MOC selection, not the observation-level MOI).
     """
     _print("Building db_mvroc_moc / sol …")
     selection = pd.read_csv(MOI / "asteroid_selection.csv")
@@ -823,7 +823,7 @@ def build_catalogue(
     orbits: pd.DataFrame,
     db_vro_mpc: pd.DataFrame,
 ) -> pd.DataFrame:
-    _print("Building mvroc_catalogue.csv …")
+    _print("Building mvroc.csv …")
     colors = pd.read_parquet(DATA / "colors.parquet")
     colors["provid"] = colors["provid"].astype(str).str.strip()
     colors = colors.drop_duplicates("provid", keep="first")
@@ -923,8 +923,8 @@ def build_catalogue(
             cat[col] = np.nan
     cat = cat[CATALOGUE_COLUMNS].copy()
     cat = cat.sort_values(["provid", "solution_id"]).reset_index(drop=True)
-    cat.to_csv(OUT / "mvroc_catalogue.csv", index=False)
-    _print(f"  {len(cat):,} rows × {cat.shape[1]} cols → mvroc_catalogue.csv")
+    cat.to_csv(OUT / "mvroc.csv", index=False)
+    _print(f"  {len(cat):,} rows × {cat.shape[1]} cols → mvroc.csv")
     return cat
 
 
