@@ -141,7 +141,7 @@ End product: **one row per solution**, with the object information joined onto e
 | H_r filled | 98.8% |
 | Shape `q_sph_k` filled | 99.5% |
 | Greenstreet period match | 56 objects |
-| SBDB `rot_per` match | 18 objects |
+| SBDB `rot_per` match | 35 objects (44 solutions) |
 
 ### Column blocks
 

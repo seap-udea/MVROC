@@ -74,63 +74,59 @@ Un pipeline para el análisis fotométrico y dinámico de SB en la era de VRO
 
    Check for flags in the MPC data pointing out errors in orbit: uncertainty parameter. Study! condition_code (integer telling the quality of the orbits, u; number of opositions). 
 
-4. **Cálculo de H para cada observación**. Por cada observación tomando la magnitud aparente, r, Delta, alpha y asumiendo el mismo valor de G para todos (G=0.15) calculamos H. La columna se guarda en el archivo de estado.
+5. **Cálculo de H para cada observación**. Por cada observación tomando la magnitud aparente, r, Delta, alpha y asumiendo el mismo valor de G para todos (G=0.15) calculamos H. La columna se guarda en el archivo de estado.
 
    Archivos: 'db_mvroc_state'
 
    **Cuando llega uno nuevo**: Se hace un chequeo obstime-mag (hash_obstime_mag). Si flag_updated=0 y el hash_obstime_mag no cambio no se hace nada. Si cualquiera de los dos cambio se recalcula.
 
-5. **Filtro por número de observaciones**. Se filtra por número de observaciones (N_obs_min = 100) a este conjunto lo llamamos MOI, MVROC Object of Interest.
+6. **Filtro por número de observaciones**. Se filtra por número de observaciones (N_obs_min = 100) a este conjunto lo llamamos MOI, MVROC Object of Interest.
 
    Archivos: 'db_mvroc_moi' (tiene las columnas del original)
 
-6. **Análisis fotométrico**. 
+7. **Análisis fotométrico**. 
 
-   5.1. Se hace periodograma de los 3 filtros en los que hayan más observaciones. Producen período y potencia.
+   7.1. Se hace periodograma de los 3 filtros en los que hayan más observaciones. Producen período y potencia.
 
-   5.2. Se hace periodograma combinados, ej. Lr+Lg, Lr+Li, Lg+Li, Lr+Lg+Li. Producen período y potencia.
+   7.2. Se hace periodograma combinados, ej. Lr+Lg, Lr+Li, Lg+Li, Lr+Lg+Li. Producen período y potencia.
 
-   5.3. Votación: se mira cuáles períodos son aliases diarios. Se deja el conjunto de periodos únicos y se vota para ver cuál es el más popular.
+   7.3. Votación: se mira cuáles períodos son aliases diarios. Se deja el conjunto de periodos únicos y se vota para ver cuál es el más popular.
 
-   5.4. Se hace un ajuste de todas las bandas con una función armónica con cada período, el popular y los demás y se evaluúa el chi-2 reducido de cada ajuste. El período con el menor chi-2 pasa a ser el preferido. 
+   7.4. Se hace un ajuste de todas las bandas con una función armónica con cada período, el popular y los demás y se evaluúa el chi-2 reducido de cada ajuste. El período con el menor chi-2 pasa a ser el preferido. 
 
-   5.5. Se identifican los periodos que son aliases de la time-window (span, campaign duration). 
+   7.5. Se identifican los periodos que son aliases de la time-window (span, campaign duration). 
 
    Archivos: completamos 'db_mcrov_moi' con: periodo mejor, chi-2, potencia, periodos secundarios, chi-2, potencia, tags de aliases; coeficientes c_x que ajustan las diferencias entre filtos; índices de color (los disponibles).
 
-6. **Selección de las curvas de luz que revelan rotación**. Aquí es donde puede usarse la OI y la IA. 
+8. **Selección de las curvas de luz que revelan rotación**. Aquí es donde puede usarse la OI y la IA. 
 
-   6.1. OI: Mirar las curvas folded de todos los períodos por objeto. Taggear los períodos que producen un folding visualmente viable.
+   8.1. OI: Mirar las curvas folded de todos los períodos por objeto. Se marcan los objetos cuyas curvas muestran rotación y pasan al MOC.
 
    Archivos: 'db_mvroc_moc': MVROC Objects with Candidate light-curves
 
-   6.2. IA: Entrenar un algoritmo para que de alguna manera saque las mejores curvas.
+   8.2. IA: Entrenar un algoritmo para que de alguna manera saque las mejores curvas.
 
-7. **Generación de los períodos detectados**.
+9. **Generación de los períodos detectados**. Después del MOC se eligen las soluciones, también por inspección visual. Para cada objeto se revisan los períodos candidatos y se conservan los que pliegan bien los datos. Cada período elegido lleva una multiclasificación: una o más etiquetas que dicen cómo pliega.
 
-   Archivos: 'db_mvroc_sol': MVROC Solutions.
+   - **clean-fold** (c): poca dispersión; los puntos siguen bien el modelo de dos picos.
+   - **scattered** (s): errores grandes o mucha dispersión; la forma de la curva se reconoce.
+   - **contaminated** (x): unos pocos puntos quedan lejos del pliegue principal.
+   - **phase-incomplete** (p): solo se cubre un tramo de la rotación.
+   - **low-amplitude** (a): amplitud pico a pico pequeña; la rotación se ve igual (a menudo en rotadores rápidos).
+   - **misaligned** (m): problemas de color o de punto cero; la curva de rotación sigue clara.
+   - **undersampled** (u): pocos puntos y/o huecos grandes en fase.
+   - **excluded** (e): se reclasifica después; sale del conjunto científico.
 
-7. **Clasificación de curvas de luz**. La idea es que asignar a cada curva de luz una categoría:
+   Un mismo período puede llevar varias etiquetas (por ejemplo `c` y `p`).
 
-   \begin{itemize}
-      \item \textbf{clean-fold} (c): Low scatter; the points follow the two-peak model well.
-      \item \textbf{scattered} (s): Large errors or high dispersion; the shape of the curve remains recognisable.
-      \item \textbf{contaminated} (x): A few points lie far from the main fold.
-      \item \textbf{phase-incomplete} (p): Only a segment of the rotation is covered.
-      \item \textbf{low-amplitude} (a): Small peak-to-peak amplitude; the rotation is still evident (often in fast rotators).
-      \item \textbf{misaligned} (m): Colour or zero-point calibration issues; the rotation curve remains clear.
-      \item \textbf{undersampled} (u): Few points and/or large gaps in rotational phase.
-      \item \textbf{excluded} (e): Reclassified later; dropped from the science set.
-   \end{itemize}
+   Archivos: 'db_mvroc_sol': MVROC Solutions. Una fila por período retenido.
 
-   NOTA: Podemos entrenar algoritmos para clasificación multiple. 
+10. **Clasificación de curvas de luz**. Con las etiquetas del paso 9 se asigna una calidad Q de 1 a 9: 1–2 es alta confianza y 7–9 pide revisión profunda. El esquema es sencillo. Si es `c` puro, Q = 1. Si es `c-p`, Q = 2. Si es `c-x`, Q = 1, etc. Las bandas de uso son A (Q = 1–2), B (3–4), C (5–6) y D (7–9).
 
-   Se asigna en una escala de 1-9 la calidad de las curvas de luz con 1-2 alta confianza y de 7-9 deep review. Esto se hace con un esquema sencillo de toma de decisión. Ej. si es c puro, 1. Si es c-p es 2, si c-x, 1, etc.
+   NOTA: Podemos entrenar algoritmos para clasificación múltiple.
 
+11. Colores a taxonomía.
 
+12. Dinámica.
 
-8. Colores a taxonomía.
-
-9. Dinámica.
-
-10. Shape. Solo los de clase A y B.
+13. Shape. Solo los de clase A y B.

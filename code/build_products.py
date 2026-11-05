@@ -329,6 +329,23 @@ def expand_solutions(solutions: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _parse_sbdb_number(value):
+    """Number from an SBDB cell, dropping a trailing unit such as 'h' or 'km'."""
+    number = pd.to_numeric(value, errors="coerce")
+    if pd.notna(number):
+        return float(number)
+    if value is None or (isinstance(value, float) and not np.isfinite(value)):
+        return np.nan
+    text = str(value).strip().lower().replace("hours", "h").replace("hour", "h")
+    text = text.replace("h", " ").replace("km", " ").strip()
+    if not text:
+        return np.nan
+    try:
+        return float(text.split()[0])
+    except (TypeError, ValueError):
+        return np.nan
+
+
 def pivot_sbdb(path: Path) -> pd.DataFrame:
     """Wide SBDB physical parameters keyed by provid."""
     raw = pd.read_csv(path, low_memory=False)
@@ -364,7 +381,7 @@ def pivot_sbdb(path: Path) -> pd.DataFrame:
     for col, part in raw.groupby("col", sort=False):
         part = part.drop_duplicates("provid", keep="first")
         if col in numeric:
-            value = pd.to_numeric(part["value"], errors="coerce")
+            value = part["value"].map(_parse_sbdb_number)
             sigma = pd.to_numeric(part["sigma"], errors="coerce")
         else:
             value = part["value"].astype(str).where(part["value"].notna(), np.nan)
