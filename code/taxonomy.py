@@ -11,6 +11,7 @@ Method
 - gri slope: weighted straight-line fit R(lam) = a + b lam through R_g, R_r, R_i at the LSST effective
   wavelengths (scipy curve_fit, sigma = reflectance errors); slope = 1e4 b [%/100nm], with its error,
   chi2 and p-value.
+- i-z: transformed from LSST to SDSS (the system of the boxes) with iz_lsst_to_sdss.
 - Class: probability of each box from Monte Carlo draws of (slope, i-z) with their errors.
 
 The comparison code (SDSS parameters, Carruba slope formula, unweighted fit, SsODNet queries) lives in
@@ -119,6 +120,40 @@ def gri_slope_fit(R, R_err, lam=LAM_LSST, bands=('g', 'r', 'i')):
                          cov_ab=1e4 * pcov[0, 1], chi2=chi2, ndof=ndof,
                          p_value=float(chi2_dist.sf(chi2, ndof))))
     return pd.DataFrame(rows)
+
+
+# --------------------------------------------------------------------------
+# LSST to SDSS colour transformation
+# --------------------------------------------------------------------------
+# Band transformations, with x = (g-i)_SDSS:
+#   g_LSST = g_SDSS - 0.062 x + 0.007
+#   i_LSST = i_SDSS - 0.010 x + 0.019
+#   z_LSST = z_SDSS + 0.020 x + 0.032
+# which give
+#   (g-i)_LSST = 0.948 x - 0.012
+#   (i-z)_LSST = (i-z)_SDSS - 0.030 x - 0.013
+_IZ_K = 0.030 / 0.948     # d(i-z)_SDSS / d(g-i)_LSST
+
+
+def gi_lsst_to_sdss(g_i):
+    """(g-i)_SDSS = [(g-i)_LSST + 0.012] / 0.948."""
+    return (np.asarray(g_i, dtype=float) + 0.012) / 0.948
+
+
+def iz_lsst_to_sdss(i_z, g_i):
+    """(i-z)_SDSS = (i-z)_LSST + 0.030 (g-i)_SDSS + 0.013, from the LSST colours i_z and g_i."""
+    return np.asarray(i_z, dtype=float) + 0.030 * gi_lsst_to_sdss(g_i) + 0.013
+
+
+def iz_lsst_to_sdss_err(i_z_err, g_err, i_err):
+    """1-sigma error of iz_lsst_to_sdss by error propagation (transformation coefficients taken as exact).
+
+    With k = 0.030 / 0.948, (i-z)_SDSS = (i-z)_LSST + k (g-i)_LSST + const. Both colours contain i, so
+    Cov[(i-z), (g-i)] = -sigma_i^2 and
+        sigma^2 = sigma_iz^2 + k^2 (sigma_g^2 + sigma_i^2) - 2 k sigma_i^2
+    """
+    v_iz, v_g, v_i = (np.asarray(e, dtype=float) ** 2 for e in (i_z_err, g_err, i_err))
+    return np.sqrt(v_iz + _IZ_K ** 2 * (v_g + v_i) - 2 * _IZ_K * v_i)
 
 
 # --------------------------------------------------------------------------
