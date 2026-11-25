@@ -149,10 +149,10 @@ file named `photometry.*`.
 
 | Order | Stage | Upstream (exact paths) | Writes |
 |------:|-------|------------------------|--------|
-| 0 | seed | external downloads (see **Getting the data** above) | `inputs/obs_sbn_X05_full.parquet`, `inputs/mpcorb_extended.dat.gz` |
+| 0 | seed | external downloads for early drivers (`crossmatches` / `orbits` / `states`; see **Getting the data** above) | `inputs/obs_sbn_X05_full.parquet`, `inputs/mpcorb_extended.dat.gz`, `inputs/kernels/naif0012.tls`, `inputs/kernels/gm_de440.tpc`, `inputs/kernels/de440s.bsp` |
 | 1 | `crossmatches` | `inputs/obs_sbn_X05_full.parquet`, `inputs/mpcorb_extended.dat.gz`, MPC Identifier API | `outputs/crossmatches/crossmatches.csv`, `mpc_query_identifier.json`, `crossmatches.log` |
 | 2 | `orbits` | `outputs/crossmatches/crossmatches.csv`, `inputs/mpcorb_extended.dat.gz` | `outputs/orbits/orbits.csv`, `orbits.log` |
-| 3 | `states` | `outputs/orbits/orbits.csv`, `inputs/obs_sbn_X05_full.parquet`, `inputs/kernels/` | `outputs/states/states.parquet`, `states.log` |
+| 3 | `states` | `outputs/orbits/orbits.csv`, `inputs/obs_sbn_X05_full.parquet`, `inputs/kernels/naif0012.tls`, `inputs/kernels/gm_de440.tpc`, `inputs/kernels/de440s.bsp` | `outputs/states/states.parquet`, `states.log` |
 | 4 | `mois` | `outputs/states/states.parquet` (+ MOI filter on obs) | `outputs/mois/mois.parquet` |
 | 5 | `periodograms` | photometry = mois + states + crossmatches | `outputs/periodograms/periodograms.csv`, `*_periodogram.webp`, `periodograms.log` |
 | 6 | `foldings` | `outputs/periodograms/periodograms.csv` + photometry | `outputs/foldings/foldings.csv`, `*_folding.webp`, `foldings.log` |

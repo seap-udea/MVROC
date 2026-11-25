@@ -9,6 +9,10 @@ the processes do not compete for the same cores.
     python catalogue_pipeline_parallel.py --workers 4 --provid "2016 GC22"
     python catalogue_pipeline_parallel.py --force --workers 8
 
+    # Active selector (keep in step with catalogue_pipeline._main):
+    # Greenstreet embolatados → figures/figures_mvroc_moi
+    #   choose_selection → select_provid_mvroc_moi_greenstreet()
+
 --workers defaults to one less than the number of CPUs. --force and --provid
 mean the same thing as in catalogue_pipeline.py. The asteroid list is the call
 in choose_selection(), kept in step with catalogue_pipeline._main.
@@ -42,8 +46,8 @@ _FLUSH_EVERY = 20
 def choose_selection(cli_provids):
     """Same asteroid list as catalogue_pipeline._main.
 
-    With --provid, keep the active selector (MOI, …) and restrict to those
-    names instead of switching to select_provid_list.
+    With --provid, keep the active selector (MOI / Greenstreet gaps, …) and
+    restrict to those names instead of switching to select_provid_list.
     """
     selected, df_set, df_rot, analysis, missing = cp.unpack_selection(
         # cp.select_provid_rotation()
@@ -58,7 +62,8 @@ def choose_selection(cli_provids):
         # cp.select_provid_literature_selrule()
         # cp.select_provid_MOI()
         # cp.select_MOC_solutions()
-        cp.select_provid_mvroc_moi()
+        # cp.select_provid_mvroc_moi()
+        cp.select_provid_mvroc_moi_greenstreet()
     )
     if not cli_provids:
         return selected, df_set, df_rot, analysis, missing

@@ -6,8 +6,9 @@ select_provid_list(), select_provid_rotation(), select_provid_rotfold(),
 select_provid_medellin(), select_provid_nobs(), select_provid_revisit(),
 select_provid_updateH(), select_provid_twoprov(), select_provid_literature(),
 select_provid_literature_selrule(), select_provid_MOI(),
-select_MOC_solutions(), or select_provid_mvroc_moi(). The active one is the
-call at the start of main().
+select_MOC_solutions(), select_provid_mvroc_moi(), or
+select_provid_mvroc_moi_greenstreet(). The active one is the call at the
+start of main().
 
 Writes, into figall/, as WebP at half the previous resolution:
   <provid>_observations.csv
@@ -1343,11 +1344,11 @@ def plot_phase_allbands(
         return path
     t0 = fit["t_band"].min()
     if freq_sel is None:
-    freq_sel = fit["freq_sel"]
+        freq_sel = fit["freq_sel"]
     if per_sel is None:
-    per_sel = fit["per_sel"]
+        per_sel = fit["per_sel"]
     if source is None:
-    source = fit.get("period_source") or f"Periodogram {fit.get('band', BAND)}"
+        source = fit.get("period_source") or f"Periodogram {fit.get('band', BAND)}"
     present = [
         b for b in ALL_BANDS if b not in ("u", "Lu") and (df_obj["band"] == b).any()
     ]
@@ -5659,10 +5660,10 @@ def process(
                     and "chi2_nu" in df_csv.columns
                 )
             else:
-            csv_ok = (provid in df_csv["provid"].values) and (
-                "epoch_utc_ini" in df_csv.columns
+                csv_ok = (provid in df_csv["provid"].values) and (
+                    "epoch_utc_ini" in df_csv.columns
                     and "obs_duration" in df_csv.columns
-            )
+                )
             requested = BAND if band is None or str(band).strip() == "" else str(band).strip()
             if (
                 csv_ok
@@ -5748,7 +5749,7 @@ def process(
                         .str.contains(r"(?:^|,)z(?:,|$)", regex=True, na=False)
                     )
                     if bool(listed_z.any()) and not bool(sub.loc[listed_z, "i-z"].notna().any()):
-                    csv_ok = False
+                        csv_ok = False
         except Exception:
             csv_ok = False
 
@@ -5862,7 +5863,7 @@ def process(
                 )
                 if wdem is not None:
                     fit["democratic_weighted"] = wdem
-                    if "phase" in analysis:
+            if "phase" in analysis:
                 written.append(
                     plot_phase_allbands(
                         df_obj,
@@ -6033,28 +6034,28 @@ def process(
                 or adopted is not None
             ):
                 stale = []
-                    if "phase_model" in analysis:
-                        stale.append(output_path("phase_model", provid))
-                    if "timemodel" in analysis:
-                        stale.append(output_path("timemodel", provid))
+                if "phase_model" in analysis:
+                    stale.append(output_path("phase_model", provid))
+                if "timemodel" in analysis:
+                    stale.append(output_path("timemodel", provid))
                 if "timemodel_Lk" in analysis:
                     stale.append(output_path("timemodel_Lk", provid))
-                    if "shape_fit" in analysis:
-                        stale.extend(
-                            [
-                                output_path("spheres", provid),
-                                output_path("ellipsoid", provid),
-                            ]
-                        )
-                    if "literature" in analysis:
-                        stale.append(output_path("literature", provid))
-                    if "multiband_photometry" in analysis:
-                        stale.append(output_path("multiband_phase_model", provid))
-                    if "shape_fit_multiband" in analysis:
-                        stale.append(output_path("shape_multiband", provid))
-                    for stale_path in stale:
-                        if stale_path.exists():
-                            stale_path.unlink()
+                if "shape_fit" in analysis:
+                    stale.extend(
+                        [
+                            output_path("spheres", provid),
+                            output_path("ellipsoid", provid),
+                        ]
+                    )
+                if "literature" in analysis:
+                    stale.append(output_path("literature", provid))
+                if "multiband_photometry" in analysis:
+                    stale.append(output_path("multiband_phase_model", provid))
+                if "shape_fit_multiband" in analysis:
+                    stale.append(output_path("shape_multiband", provid))
+                for stale_path in stale:
+                    if stale_path.exists():
+                        stale_path.unlink()
             if "phase_model" in analysis:
                 written.append(Lr_phase_curve(provid, fit))
             if "shape_fit" in analysis:
@@ -7507,6 +7508,271 @@ def select_provid_mvroc_moi(Nb=3):
     return selected, df_set, df_rot, analysis, missing
 
 
+def _mvroc_moi_finished_provids(fig_dir=None):
+    """Provids already written under figures_mvroc_moi (results CSV + webp)."""
+    fig_dir = Path(fig_dir) if fig_dir is not None else (
+        ROOT / "figures" / "figures_mvroc_moi"
+    )
+    done = set()
+    results = fig_dir / "asteroid_analysis_results.csv"
+    if results.exists():
+        try:
+            table = pd.read_csv(results, usecols=["provid"])
+            done.update(table["provid"].dropna().astype(str).str.strip().tolist())
+        except Exception as exc:
+            print(f"  warning: could not read {results.name}: {exc}")
+    if fig_dir.exists():
+        for path in fig_dir.glob("*_periodogram_democratic.webp"):
+            stem = path.stem[: -len("_periodogram_democratic")]
+            if stem:
+                done.add(stem.replace("_", " "))
+        for path in fig_dir.glob("*_multiband_photometry_compare.webp"):
+            stem = path.stem[: -len("_multiband_photometry_compare")]
+            if stem:
+                done.add(stem.replace("_", " "))
+    return {name for name in done if name and name.lower() != "nan"}
+
+
+def _load_obs_for_provids(provids):
+    """Observation rows for the given provids from the full Rubin parquet.
+
+    Same columns as ``load_df_set_mvroc_moi`` (including ``id``) so absolute
+    magnitude ``H`` can be joined from ``db_mvroc_state.parquet``.
+    """
+    wanted = sorted({str(p).strip() for p in provids if str(p).strip()})
+    if not wanted:
+        return pd.DataFrame(
+            columns=[
+                "id",
+                "obstime",
+                "permid",
+                "provid",
+                "ra",
+                "dec",
+                "band",
+                "mag",
+                "rmsmag",
+            ]
+        )
+    if not OBS_FILE.exists():
+        raise SystemExit(f"Missing observation parquet: {OBS_FILE}")
+    schema_names = set(pq.read_schema(OBS_FILE).names)
+    columns = [
+        "id",
+        "obstime",
+        "permid",
+        "provid",
+        "ra",
+        "dec",
+        "band",
+        "mag",
+        "rmsmag",
+    ]
+    if "mpc_designation" in schema_names:
+        columns.append("mpc_designation")
+    print(
+        f"Loading photometry for {len(wanted)} provid name(s) "
+        f"from {OBS_FILE.name} …"
+    )
+    # Arrow ``isin`` keeps the read off the full table when possible.
+    table = pq.read_table(
+        OBS_FILE,
+        columns=columns,
+        filters=[("provid", "in", wanted)],
+    )
+    df = table.to_pandas()
+    if "mpc_designation" not in df.columns:
+        df["mpc_designation"] = pd.NA
+    print(f"  {len(df):,} observation rows for requested provids")
+    return df
+
+
+def _attach_state_h(df):
+    """Join absolute magnitude H from products/db_mvroc_state.parquet on id."""
+    if df.empty:
+        df = df.copy()
+        df["H"] = pd.Series(dtype=float)
+        df["provid_mpc"] = pd.Series(dtype=object)
+        return df
+    if not STATE_PARQUET.exists():
+        raise SystemExit(f"Missing state product: {STATE_PARQUET}")
+    print(f"Loading absolute magnitudes from {STATE_PARQUET.name} …")
+    state = pd.read_parquet(
+        STATE_PARQUET, columns=["id", "H", "provid_mpc", "permid"]
+    )
+    state["id"] = pd.to_numeric(state["id"], errors="coerce")
+    out = df.copy()
+    out["id"] = pd.to_numeric(out["id"], errors="coerce")
+    state_h = state.dropna(subset=["id"]).drop_duplicates("id", keep="first")
+    out = out.merge(
+        state_h[["id", "H", "provid_mpc"]],
+        on="id",
+        how="left",
+        suffixes=("", "_state"),
+    )
+    n_h = int(out["H"].notna().sum())
+    print(
+        f"  H matched for {n_h:,} / {len(out):,} rows "
+        f"({100.0 * n_h / max(len(out), 1):.1f}%)"
+    )
+    return out
+
+
+def select_provid_mvroc_moi_greenstreet(n_min=1, Nb=3):
+    """Greenstreet asteroids missing from figures_mvroc_moi (embolatados).
+
+    Many Greenstreet / Medellín bodies were excluded from the MOI/nobs cut
+    (``select_provid_nobs`` drops the Medellín list), so they never entered
+    ``db_mvroc_moi`` / the first ``figures_mvroc_moi`` run. This selector
+    finds every ``asteroids-with-rotation.csv`` provid that still lacks a
+    figure there, loads photometry from the full observation parquet (with
+    ``alt_designation`` aliases merged), attaches ``H`` from
+    ``db_mvroc_state``, and writes the same democratic + multiband compare
+    products into ``figures/figures_mvroc_moi``.
+    """
+    fig_dir = ROOT / "figures" / "figures_mvroc_moi"
+    set_fig_dir(fig_dir)
+    analysis = {
+        "observations",
+        "periodogram_democratic",
+        "multiband_photometry_compare",
+    }
+    check_analysis(analysis, "analysis")
+
+    paper = load_rotation_catalog()
+    done = _mvroc_moi_finished_provids(fig_dir)
+    print(
+        f"Greenstreet catalog: {len(paper)} asteroids; "
+        f"{len(done)} provids already in {fig_dir.name}"
+    )
+
+    # Build alias groups; keep paper provid as canonical name.
+    groups_all = []
+    for _, row in paper.iterrows():
+        provid = str(row["provid"]).strip()
+        names = [provid]
+        alt = row.get("alt_designation")
+        if pd.notna(alt) and str(alt).strip() and str(alt).strip() != provid:
+            names.append(str(alt).strip())
+        groups_all.append({"canonical": provid, "provids": names})
+
+    already = []
+    pending_groups = []
+    for group in groups_all:
+        aliases = set(group["provids"])
+        if aliases & done:
+            already.append(group["canonical"])
+        else:
+            pending_groups.append(group)
+    print(
+        f"{len(already)} Greenstreet already have figures_mvroc_moi; "
+        f"{len(pending_groups)} embolatados to process"
+    )
+    if not pending_groups:
+        raise SystemExit(
+            "No Greenstreet gaps left in figures_mvroc_moi "
+            "(every catalog provid already has results or webp)."
+        )
+
+    # Photometry for every alias name of the pending objects.
+    alias_names = sorted(
+        {name for group in pending_groups for name in group["provids"]}
+    )
+    raw = _load_obs_for_provids(alias_names)
+    if raw.empty:
+        raise SystemExit(
+            "No photometry rows found for Greenstreet gaps in "
+            f"{OBS_FILE.name}."
+        )
+    raw["provid"] = raw["provid"].astype(str).str.strip()
+    counts = raw.groupby("provid").size()
+
+    paper_groups = []
+    missing = []
+    short = []
+    for group in pending_groups:
+        n_parts = [int(counts.get(name, 0)) for name in group["provids"]]
+        n_total = int(sum(n_parts))
+        if n_total <= 0:
+            missing.append(group["canonical"])
+            continue
+        if n_total < int(n_min):
+            short.append((group["canonical"], n_total))
+            continue
+        paper_groups.append(
+            {
+                "canonical": group["canonical"],
+                "provids": group["provids"],
+                "n_obs_total": n_total,
+            }
+        )
+    if short:
+        print(
+            f"  {len(short)} Greenstreet gaps below n_min={n_min}: "
+            + ", ".join(f"{p}({n})" for p, n in short[:12])
+            + ("…" if len(short) > 12 else "")
+        )
+    if missing:
+        print(
+            f"  {len(missing)} Greenstreet gaps with no photometry: "
+            + ", ".join(missing[:12])
+            + ("…" if len(missing) > 12 else "")
+        )
+    if not paper_groups:
+        raise SystemExit(
+            f"No Greenstreet gaps with combined n_obs >= {n_min}."
+        )
+
+    df_merged, alias_map = merge_equivalent_provids(raw, paper_groups)
+    df_merged = _attach_state_h(df_merged)
+    df_merged["band"] = df_merged["band"].map(
+        lambda b: f"L{b}" if pd.notnull(b) and len(str(b)) == 1 else b
+    )
+    if "mpc_designation" not in df_merged.columns or df_merged["mpc_designation"].isna().all():
+        df_merged["mpc_designation"] = df_merged.get("provid_mpc", pd.Series(dtype=object))
+    df_merged["mpc_designation"] = df_merged["mpc_designation"].astype(str).str.strip()
+    df_merged.loc[
+        df_merged["mpc_designation"].isin(["", "nan", "None"]), "mpc_designation"
+    ] = pd.NA
+    if "permid" in df_merged.columns:
+        df_merged["permid"] = df_merged["permid"].astype("string")
+    df_merged[["ra", "dec", "mag", "rmsmag", "H"]] = df_merged[
+        ["ra", "dec", "mag", "rmsmag", "H"]
+    ].apply(pd.to_numeric, errors="coerce")
+    df_merged["rmsmag"] = df_merged["rmsmag"].where(
+        df_merged["rmsmag"].notna() & (df_merged["rmsmag"] > 0), 0.01
+    )
+    df_merged["obstime"] = pd.to_datetime(df_merged["obstime"])
+    df_merged["night"] = df_merged["obstime"].dt.floor("D")
+    df_set = df_merged.sort_values(
+        by=["provid", "band", "obstime"],
+        ascending=[True, True, True],
+    ).reset_index(drop=True)
+    df_set.attrs["alias_map"] = alias_map
+
+    selected = pd.DataFrame(
+        {
+            "provid": [g["canonical"] for g in paper_groups],
+            "n_obs": [g["n_obs_total"] for g in paper_groups],
+            "band": BAND,
+        }
+    )
+    selected = selected.sort_values("n_obs", ascending=False).reset_index(drop=True)
+    # Democratic / multiband compare do not need literature periods here.
+    df_rot = pd.DataFrame(columns=["provid"])
+    selected.attrs["missing"] = missing
+    selected.attrs["exclude_lx"] = EXCLUDE_LX
+    selected.attrs["Nb"] = int(Nb)
+    selected.attrs["alias_map"] = alias_map
+    selected.attrs["skip_geometry"] = True
+    print(
+        f"{len(selected)} Greenstreet embolatados selected for democratic + "
+        f"multiband compare → {fig_dir}"
+    )
+    print("  " + ", ".join(selected["provid"].astype(str).tolist()))
+    return selected, df_set, df_rot, analysis, missing
+
+
 def select_MOC_solutions(Nb=3):
     """MOC solutions: fold every retained period into figures_mvroc_sol.
 
@@ -7810,6 +8076,7 @@ def _main(t_start):
         # select_MOC_solutions: figures_MOI/solutions.csv → fold only → figures_mvroc_sol
         # select_provid_MOI: figures_MOI/solutions.csv → folding + shape_fit
         # select_provid_mvroc_moi: pipeline products (state H + moi obs) → figures_mvroc_moi
+        # select_provid_mvroc_moi_greenstreet: Greenstreet gaps → figures_mvroc_moi
         # selected, df_set, df_rot, analysis, missing = unpack_selection(select_provid_all())
         # selected, df_set, df_rot, analysis, missing = unpack_selection(select_provid_list())
         selected, df_set, df_rot, analysis, missing = unpack_selection(
@@ -7825,7 +8092,8 @@ def _main(t_start):
             # select_provid_literature_selrule()
             # select_provid_MOI()
             # select_MOC_solutions()
-            select_provid_mvroc_moi()
+            # select_provid_mvroc_moi()
+            select_provid_mvroc_moi_greenstreet()
         )
         # selected, df_set, df_rot, analysis, missing = unpack_selection(select_provid_medellin())
     if not force:
@@ -8040,7 +8308,7 @@ def _main(t_start):
                     # One row per MVROC solution (fold ± shape; no lit panels).
                     peak_rows.extend(_moi_solution_result_rows(provid, fit))
                 else:
-                peak_rows.append(row)
+                    peak_rows.append(row)
             else:
                 failed[provid] = err or "Not enough data, or an error in the calculation"
 
