@@ -4,7 +4,8 @@ Guía para marcar **soluciones** en la galería de figuras
 `*_multiband_photometry_compare.webp` (7775 asteroides) con la
 [Gallery App](https://seap-udea.github.io/gallapp/).
 
-Abre tu enlace de inicio (tabla al final) y trabaja en el rango asignado.
+Abre tu enlace de inicio (tabla de reparto más abajo) y trabaja en el rango
+asignado.
 
 ---
 
@@ -17,8 +18,9 @@ Lectura rápida del pantallazo:
 1. **Arriba** — carpeta del repo, filtro y contador (`7775 images · … classified`).
 2. **Navegación** — `«` `<` casilla `n / 7775` `>` `»`, o teclas **←** / **→**,
    para cambiar de asteroide.
-3. **Filtros de clase** — *All*, *No class*, `select-1`…`select-5`, `jpl-sbdb (j)`,
-   `green (g)`. Sirven para revisar solo un tipo de etiqueta.
+3. **Filtros de clase** — *All*, *No class*, *Classified*, `select-1`…`select-5`,
+   `jpl-sbdb (j)`, `green (g)`. *Classified* muestra todas las ya etiquetadas;
+   los demás radios filtran por una sola clase.
 4. **Figura central** — el compare multiband. Arriba el panel **1** (solución
    *selected* del algoritmo); abajo los paneles **2**, **3**, … en orden.
 5. **Badge** (esquina de la figura) — clases ya puestas en esa imagen
@@ -61,78 +63,12 @@ clase de la imagen. No hace falta *Remove classification* para un solo tag.
 
 | Shift + | Clase | Uso |
 |--------:|-------|-----|
-| `j` | jpl-sbdb | Periodo SBDB / JPL |
-| `g` | green | Greenstreet et al. |
+| `j` | jpl-sbdb | Periodo publicado en SBDB / JPL |
+| `g` | green | Periodo en Greenstreet et al. |
 
-No las borres si ya están. En tu rango céntrate en `1`–`5`.
-
----
-
-## Qué mirar en cada figura
-
-- El panel de arriba es el candidato principal; los de abajo son alternativas.
-- Marca un panel cuando el **patrón de brillo se repite** a lo largo de la fase
-  (dos máximos típicos de un elipsoide) y los puntos de las bandas siguen esa
-  forma.
-- **Si la curva armónica negra no ajusta del todo, pero ves el patrón
-  repetirse, márcalo igual como bien folded.** El modelo es una guía; el ojo
-  manda.
-
-Ejemplo (2025 MA19): el modelo no abraza cada punto, pero la onda de brillo es
-clara → conviene marcar el panel (p. ej. `select-1`).
-
-![2025 MA19 — patrón claro aunque el armónico no sea perfecto](examples/2025_MA19_multiband_photometry_compare.webp)
-
-- Si **ningún** panel sirve, no marques `1`–`5`.
-
-Para ver cómo se etiquetó antes, filtra la galería por **select-1** (radio
-`select-1` arriba) o abre
-[ejemplos ya en select-1](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=0&class=1&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session).
-
----
-
-## Ejemplos de aspecto (clasificación de calidad previa)
-
-Antes se usaban etiquetas de **calidad del fold** (clean-fold, scattered, …).
-Ya no hay que ponerlas en gallapp; sirven para entrenar el ojo: qué se ve bien
-y qué se ve regular, pero **aún así** a veces el periodo se marca en `1`–`5`.
-
-### Clean folding
-
-Poca dispersión; los puntos siguen de cerca el modelo de dos picos.
-
-![1985 QP5 — clean folding](examples/1985_QP5_multiband_photometry_compare.webp)
-
-### Scattered folding
-
-Más ruido / χ² alto; la forma de rotación sigue legible.
-
-![1999 XK86 — scattered folding](examples/1999_XK86_multiband_photometry_compare.webp)
-
-### Phase-incomplete
-
-Solo se cubre un tramo de la rotación (huecos grandes en fase).
-
-![1999 GM6 — phase-incomplete](examples/1999_GM6_multiband_photometry_compare.webp)
-
-### Low-amplitude
-
-Amplitud pequeña; la rotación aún se intuye (a menudo rotadores rápidos).
-
-![1999 TJ113 — low-amplitude](examples/1999_TJ113_multiband_photometry_compare.webp)
-
-### Misaligned
-
-Zero-points / colores desordenados (p. ej. una banda muy desviada); la forma
-de rotación puede seguir clara.
-
-![1998 BG25 — misaligned / bandas desalineadas](examples/1998_BG25_multiband_photometry_compare.webp)
-
-### Undersampled
-
-Pocas observaciones o muestreo irregular; el fold es más frágil.
-
-![2001 BN21 — undersampled](examples/2001_BN21_multiband_photometry_compare.webp)
+`j` y `g` **no** significan “buen folding”. Solo dicen que ese asteroide tiene
+un periodo en la literatura. En tu rango **no las borres** si ya están; tu
+trabajo es decidir `1`–`5` mirando los paneles.
 
 ---
 
@@ -164,3 +100,126 @@ así (abre el enlace de tu fila y avanza con → hasta cubrir tu rango):
 
 Si dudas en un objeto, déjalo sin `1`–`5` y anótalo para revisión conjunta.
 Al cerrar, **Export sidecars**.
+
+---
+
+## Conjunto de entrenamiento
+
+Antes de clasificar tu rango, mira ejemplos **ya etiquetados** para calibrar el
+ojo. En gallapp usa el filtro **Classified**, o abre:
+
+[Todas las imágenes clasificadas](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=0&class=x&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session)
+(`class=x`).
+
+Ese conjunto mezcla dos cosas distintas:
+
+1. **Soluciones visuales** — llevan `select-1`…`select-5` porque alguien juzgó
+   que uno o más paneles pliegan bien (a veces junto con `j` o `g`).
+2. **Solo literatura** — llevan `j` y/o `g` **sin** `1`–`5`. Son curvas con
+   periodo publicado, incluidas para contraste; **muchas no están bien
+   folded** con nuestros datos. No las tomes como modelo de “qué marcar”.
+
+Al entrenar el ojo, prioriza las que tienen `1`–`5`. Filtra por `select-1` (u
+otra select) si quieres ver solo folds aceptados. Usa `j` / `g` para ver cómo
+se ve la literatura cuando el folding falla o es dudoso.
+
+Hay **distintos tipos de curva** entre las que sí llevan `1`–`5`. En muchos de
+esos casos **sí** conviene marcar un panel aunque el aspecto no sea “perfecto”.
+
+### Submuestreado
+
+Pocas observaciones o muestreo irregular.
+
+![1977 UO5 — submuestreado](examples/1977_UO5_multiband_photometry_compare.webp)
+
+### Fold limpio
+
+Poca dispersión; los puntos siguen de cerca el modelo de dos picos.
+
+![1981 US22 — fold limpio](examples/1981_US22_multiband_photometry_compare.webp)
+
+![2025 MM81 — fold limpio](examples/2025_MM81_multiband_photometry_compare.webp)
+
+### Disperso
+
+Dispersión alta (con o sin errores grandes); la forma de rotación sigue
+legible.
+
+![1989 SL3 — errores altos y dispersión](examples/1989_SL3_multiband_photometry_compare.webp)
+
+![1998 FN74 — errores bajos pero dispersión](examples/1998_FN74_multiband_photometry_compare.webp)
+
+### Baja amplitud
+
+Amplitud pequeña; la rotación aún se intuye.
+
+![1993 OX7 — baja amplitud](examples/1993_OX7_multiband_photometry_compare.webp)
+
+### Contaminado
+
+Algunos puntos se apartan mucho del fold principal.
+
+![1998 BG25 — contaminado](examples/1998_BG25_multiband_photometry_compare.webp)
+
+### Fase incompleta
+
+Solo se cubre un tramo de la rotación (huecos grandes en fase).
+
+![1998 FH23 — fase incompleta](examples/1998_FH23_multiband_photometry_compare.webp)
+
+![2025 MV38 — fase incompleta](examples/2025_MV38_multiband_photometry_compare.webp)
+
+### Mejor folding no es el panel principal
+
+El candidato de arriba no es el mejor; marca el panel de abajo que sí pliega
+bien (p. ej. `select-2`…`select-5`).
+
+![2025 MV31 — mejor folding no es el principal](examples/2025_MV31_multiband_photometry_compare.webp)
+
+### En la literatura (`j` / `g`), pero el folding es fallido
+
+Parte del conjunto de entrenamiento son objetos **solo** con `j` o `g` (sin
+`1`–`5`): hay periodo en SBDB/Greenstreet, pero con nuestra fotometría **ningún**
+panel pliega bien. Eso es normal. **No marques `1`–`5` solo porque veas `j` o
+`g`.** La etiqueta de literatura no sustituye el folding.
+
+![2025 MN45 — literatura, folding fallido](examples/2025_MN45_multiband_photometry_compare.webp)
+
+![2025 MK41 — literatura, folding fallido](examples/2025_MK41_multiband_photometry_compare.webp)
+
+### Periodos largos (clusters por días)
+
+La fase se agrupa en “paquetes” por noche/día; aún así el patrón puede ser
+válido.
+
+![2016 RP29 — periodo largo / clusters](examples/2016_RP29_multiband_photometry_compare.webp)
+
+### Ajuste armónico malo, pero se ve otra forma de curva
+
+La curva negra no ajusta, pero hay una forma repetible distinta del armónico
+clásico → puede marcarse si el patrón es claro.
+
+![2025 MA19 — patrón claro aunque el armónico no sea perfecto](examples/2025_MA19_multiband_photometry_compare.webp)
+
+### Cuándo **no** clasificar (`1`–`5`)
+
+- El ajuste es muy poco armónico / la figura se ve casi **sinusoidal** sin el
+  patrón de dos picos:
+
+![2004 XW104 — no clasificar (poco armónico / sinusoidal)](examples/2004_XW104_multiband_photometry_compare.webp)
+
+- La amplitud es **demasiado** baja para confiar en un periodo:
+
+![2004 NZ8 — no clasificar (amplitud demasiado baja)](examples/2004_NZ8_multiband_photometry_compare.webp)
+
+---
+
+## Qué mirar en cada figura
+
+- El panel de arriba es el candidato principal; los de abajo son alternativas.
+- Marca un panel cuando el **patrón de brillo se repite** a lo largo de la fase
+  (dos máximos típicos de un elipsoide) y los puntos de las bandas siguen esa
+  forma.
+- **Si la curva armónica negra no ajusta del todo, pero ves el patrón
+  repetirse, márcalo igual.** El modelo es una guía; el ojo manda.
+- Si **ningún** panel sirve, no marques `1`–`5`.
