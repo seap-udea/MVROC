@@ -4,8 +4,36 @@ Guía para marcar **soluciones** en la galería de figuras
 `*_multiband_photometry_compare.webp` (7775 asteroides) con la
 [Gallery App](https://seap-udea.github.io/gallapp/).
 
-Abre tu enlace de inicio (tabla de reparto más abajo) y trabaja en el rango
-asignado.
+Abre tu enlace de inicio (tabla siguiente) y trabaja en el rango asignado.
+
+---
+
+## Reparto del trabajo (desde la figura 1000)
+
+Los índices **0–999** ya se revisaron. Desde **1000** hasta el final se reparte
+así (abre el enlace de tu fila y avanza con → hasta cubrir tu rango):
+
+| Persona | Rango (índice) | Figuras | Enlace de inicio |
+|---------|----------------|--------:|------------------|
+| Nico | 1000 – 2693 | 1694 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=1000&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
+| Juanita | 2694 – 4387 | 1694 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=2694&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
+| Vale | 4388 – 6081 | 1694 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=4388&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
+| Angie | 6082 – 7774 | 1693 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=6082&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
+
+Si dudas en un objeto, déjalo sin `1`–`5` y anótalo para revisión conjunta.
+Al cerrar, **Export sidecars**.
+
+---
+
+## Qué mirar en cada figura
+
+- El panel de arriba es el candidato principal; los de abajo son alternativas.
+- Marca un panel cuando el **patrón de brillo se repite** a lo largo de la fase
+  (dos máximos típicos de un elipsoide) y los puntos de las bandas siguen esa
+  forma.
+- **Si la curva armónica negra no ajusta del todo, pero ves el patrón
+  repetirse, márcalo igual.** El modelo es una guía; el ojo manda.
+- Si **ningún** panel sirve, no marques `1`–`5`.
 
 ---
 
@@ -83,23 +111,6 @@ trabajo es decidir `1`–`5` mirando los paneles.
   **Import sidecars** con ese ZIP para recuperar las marcas.
 - Cuando termines un bloque (o el día), exporta otra vez por si acaso.
   *Download classified (.zip)* también empaqueta lo clasificado para revisión.
-
----
-
-## Reparto del trabajo (desde la figura 1000)
-
-Los índices **0–999** ya se revisaron. Desde **1000** hasta el final se reparte
-así (abre el enlace de tu fila y avanza con → hasta cubrir tu rango):
-
-| Persona | Rango (índice) | Figuras | Enlace de inicio |
-|---------|----------------|--------:|------------------|
-| Nico | 1000 – 2693 | 1694 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=1000&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| Juanita | 2694 – 4387 | 1694 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=2694&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| Vale | 4388 – 6081 | 1694 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=4388&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| Angie | 6082 – 7774 | 1693 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=6082&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-
-Si dudas en un objeto, déjalo sin `1`–`5` y anótalo para revisión conjunta.
-Al cerrar, **Export sidecars**.
 
 ---
 
@@ -211,15 +222,3 @@ clásico → puede marcarse si el patrón es claro.
 - La amplitud es **demasiado** baja para confiar en un periodo:
 
 ![2004 NZ8 — no clasificar (amplitud demasiado baja)](examples/2004_NZ8_multiband_photometry_compare.webp)
-
----
-
-## Qué mirar en cada figura
-
-- El panel de arriba es el candidato principal; los de abajo son alternativas.
-- Marca un panel cuando el **patrón de brillo se repite** a lo largo de la fase
-  (dos máximos típicos de un elipsoide) y los puntos de las bandas siguen esa
-  forma.
-- **Si la curva armónica negra no ajusta del todo, pero ves el patrón
-  repetirse, márcalo igual.** El modelo es una guía; el ojo manda.
-- Si **ningún** panel sirve, no marques `1`–`5`.
