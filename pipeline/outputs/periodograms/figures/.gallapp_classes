@@ -1,0 +1,15 @@
+1	select-1	1
+2	select-2	2
+3	select-3	3
+4	select-4	4
+5	select-5	5
+6	clean-fold	c
+7	scattered	s
+8	contaminated	x
+9	phase-incomplete	p
+10	low-amplitude	a
+11	misaligned	m
+12	undersampled	u
+13	excluded	e
+14	jpl-sbdb	j
+15	green	g
