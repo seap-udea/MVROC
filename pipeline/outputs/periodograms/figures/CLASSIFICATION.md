@@ -1,144 +1,166 @@
 # Clasificación visual — periodograms (multiband compare)
 
-Guía para marcar soluciones en
-[`pipeline/outputs/periodograms/figures`](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=0&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session)
-con [gallapp](https://seap-udea.github.io/gallapp/) (`multi=true`).
+Guía para marcar **soluciones** en la galería de figuras
+`*_multiband_photometry_compare.webp` (7775 asteroides) con la
+[Gallery App](https://seap-udea.github.io/gallapp/).
 
-Hay **7775** figuras `*_multiband_photometry_compare.webp` (una por asteroide).
-El índice `n` del enlace es la posición en la galería ordenada por nombre de
-archivo (0 … 7774).
+Abre tu enlace de inicio (tabla al final) y trabaja en el rango asignado.
 
 ---
 
-## Qué muestra cada figura
+## Cómo es la página
 
-Cada WebP es un **multiband 2-peak compare**:
+![Pantalla de la Gallery App (MVROC)](examples/MVROC-classification.png)
 
-1. **Panel grande (arriba)** — periodo adoptado por el algoritmo (`selected`).
-2. **Paneles pequeños (abajo)** — otros candidatos a dos picos (votados / alias),
-   de izquierda a derecha y luego la fila siguiente.
+Lectura rápida del pantallazo:
 
-En cada panel: fase en \(2P\), magnitud absoluta \(H\), modelo armónico de dos
-picos, \(\chi^2_\nu\), power, amplitud \(A\) y \(A/s\). Un título en **rojo**
-suele indicar alias de campaña u otro problema; no lo marques como solución
-salvo que el fold sea claramente bueno.
+1. **Arriba** — carpeta del repo, filtro y contador (`7775 images · … classified`).
+2. **Navegación** — `«` `<` casilla `n / 7775` `>` `»`, o teclas **←** / **→**,
+   para cambiar de asteroide.
+3. **Filtros de clase** — *All*, *No class*, `select-1`…`select-5`, `jpl-sbdb (j)`,
+   `green (g)`. Sirven para revisar solo un tipo de etiqueta.
+4. **Figura central** — el compare multiband. Arriba el panel **1** (solución
+   *selected* del algoritmo); abajo los paneles **2**, **3**, … en orden.
+5. **Badge** (esquina de la figura) — clases ya puestas en esa imagen
+   (p. ej. `1, 2, 3, j`).
+6. **Abajo** — botones de la imagen (*View*, *Download*, …) y, importante,
+   **Export sidecars** / **Import sidecars** y *Download classified*.
 
----
+A la derecha del listado de clases suele aparecer el recordatorio:
 
-## Clases
-
-| Tecla | Clase | Uso |
-|------:|-------|-----|
-| `1` … `5` | `select-1` … `select-5` | Paneles que **sí** guardas como solución (puedes marcar varios) |
-| `j` | `jpl-sbdb` | Coincide / ya contrastado con periodo SBDB (literatura JPL) |
-| `g` | `green` | Coincide / ya contrastado con Greenstreet et al. |
-
-**Regla principal:** `select-k` = el panel número **k** de la figura (1 = el de
-arriba; 2, 3, … = los de abajo en orden de lectura).
-
-- Marca **todos** los paneles que folden bien (curva coherente, dos máximos
-  claros, datos que siguen el modelo).
-- Si **ningún** panel sirve, no marques `1`–`5` (déjalo en *No class* para
-  soluciones).
-- **No borres** `j` / `g` si ya están; son etiquetas de literatura. Tu trabajo
-  en el rango asignado es decidir `1`–`5`.
-
-Persistencia: el enlace usa `persist=session` (la sesión del navegador).
-Revisa que gallapp esté guardando en este directorio del repo.
+> Use ← → to browse · Shift+ toggles classes · Shift+0 clears
 
 ---
 
-## Cómo decidir (criterio breve)
+## Teclas y navegación
 
-Marca un panel cuando:
+| Acción | Cómo |
+|--------|------|
+| Asteroide anterior / siguiente | **←** / **→** (o botones `<` `>`) |
+| Ir al primero / último | `«` / `»` |
+| Marcar o quitar una clase | **Shift + tecla de la clase** (toggle) |
+| Quitar todas las clases de la imagen | **Shift + 0** |
+| Filtrar la galería por una clase | clic en el radio *select-1*, *green*, etc. |
 
-- Se vean **dos picos** en fase y el modelo negro los describa.
-- Los puntos (todas las bandas, con zero-points) no estén dispersos al azar.
-- \(A/s\) y power sean razonables frente a paneles peores de la misma figura.
-- Un \(\chi^2_\nu\) alto no descarta solo: mira el fold. Un panel con título rojo
-  (alias) casi nunca se marca.
+### Clases de solución (tu trabajo principal)
 
-No marques cuando:
+| Shift + | Clase | Significado |
+|--------:|-------|-------------|
+| `1` | select-1 | Panel grande de arriba |
+| `2` | select-2 | Primer panel pequeño (abajo, izq.) |
+| `3` | select-3 | Siguiente panel |
+| `4` | select-4 | Siguiente |
+| `5` | select-5 | Siguiente |
 
-- El fold es plano, de un solo pico, o el modelo no sigue los datos.
-- Solo hay ruido / outliers sin forma de rotación.
-- El periodo es un alias de campaña evidente y el fold no convence.
+Puedes marcar **varios** paneles si varios pliegan bien.
 
----
+**Toggle:** si pulsas otra vez **Shift + la misma tecla**, **se quita** esa
+clase de la imagen. No hace falta *Remove classification* para un solo tag.
 
-## Ejemplos de la clasificación previa
+### Clases de literatura (ya rellenadas en muchos casos)
 
-Enlaces con `n` = posición actual en la galería. Ábrelos en gallapp y mira qué
-clases ya tienen (`1`–`5`, `j`, `g`).
+| Shift + | Clase | Uso |
+|--------:|-------|-----|
+| `j` | jpl-sbdb | Periodo SBDB / JPL |
+| `g` | green | Greenstreet et al. |
 
-### Solo panel 1 (`select-1`)
-
-El de arriba folda bien; el/los de abajo no.
-
-| Asteroide | `n` | Enlace |
-|-----------|----:|--------|
-| 1985 QP5 | 10 | [abrir](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=10&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| 1989 SL3 | 17 | [abrir](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=17&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-
-### Paneles 1 y 2 (`select-1` + `select-2`)
-
-Arriba y el primer candidato de abajo son soluciones distintas útiles
-(p. ej. 1981 US22: \(P\approx 2.94\,\mathrm{h}\) y \(2.77\,\mathrm{h}\)).
-
-| Asteroide | `n` | Enlace |
-|-----------|----:|--------|
-| 1981 US22 | 8 | [abrir](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=8&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| 1993 OX7 | 30 | [abrir](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=30&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-
-### Tres paneles (`select-1` + `2` + `3`)
-
-| Asteroide | `n` | Enlace |
-|-----------|----:|--------|
-| 2003 FY140 | 893 | [abrir](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=893&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| 2003 UJ112 | 958 | [abrir](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=958&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-
-### Panel 4 (`select-4`)
-
-Poco frecuente: un candidato más abajo en la figura (no el seleccionado).
-
-| Asteroide | `n` | Enlace |
-|-----------|----:|--------|
-| 2003 TF1 | 948 | [abrir](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=948&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-
-### Literatura ya marcada (`j` / `g`)
-
-Solo referencia; en tu rango céntrate en `1`–`5`.
-
-| Etiqueta | Ejemplo | `n` | Enlace |
-|----------|---------|----:|--------|
-| `jpl-sbdb` (`j`) | 1931 TF2 | 0 | [abrir](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=0&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| `green` (`g`) | 2022 CJ2 | 4439 | [abrir](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=4439&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| solución + green | 2015 KR298 (`1,2,7`) | 3268 | [abrir](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=3268&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-
-Filtrar por clase en gallapp: cambia `class=all` por `class=1`, `class=6`
-(`jpl-sbdb`), `class=7` (`green`), etc.
+No las borres si ya están. En tu rango céntrate en `1`–`5`.
 
 ---
 
-## Reparto del trabajo (`n` ≥ 1000)
+## Qué mirar en cada figura
 
-Los índices **0–999** ya se usaron en la pasada previa. Desde **`n = 1000`**
-hasta el final (**`n = 7774`**, 6775 figuras) se reparte entre cuatro personas
-(casi 1694 cada una; Angie cierra con 1693).
+- El panel de arriba es el candidato principal; los de abajo son alternativas.
+- Marca un panel cuando el **patrón de brillo se repite** a lo largo de la fase
+  (dos máximos típicos de un elipsoide) y los puntos de las bandas siguen esa
+  forma.
+- **Si la curva armónica negra no ajusta del todo, pero ves el patrón
+  repetirse, márcalo igual como bien folded.** El modelo es una guía; el ojo
+  manda.
 
-Plantilla de enlace (cambia solo `n=`):
+Ejemplo (2025 MA19): el modelo no abraza cada punto, pero la onda de brillo es
+clara → conviene marcar el panel (p. ej. `select-1`).
 
-```text
-https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=START&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session
-```
+![2025 MA19 — patrón claro aunque el armónico no sea perfecto](examples/2025_MA19_multiband_photometry_compare.webp)
 
-| Persona | Rango `n` | Figuras | Primero → último (archivo) | Enlace de inicio |
-|---------|-----------|--------:|----------------------------|------------------|
-| Nico | 1000 – 2693 | 1694 | `2004_DX24_…` → `2013_NK72_…` | [n=1000](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=1000&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| Juanita | 2694 – 4387 | 1694 | `2013_NN2_…` → `2021_RF13_…` | [n=2694](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=2694&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| Vale | 4388 – 6081 | 1694 | `2021_RG114_…` → `2025_MD86_…` | [n=4388](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=4388&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
-| Angie | 6082 – 7774 | 1693 | `2025_MD87_…` → `2026_GH4_…` | [n=6082](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=6082&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
+- Si **ningún** panel sirve, no marques `1`–`5`.
 
-Al terminar un bloque, el `n` del navegador debe quedar en el **último** de tu
-rango (o uno más). Si dudas en un objeto, déjalo sin `1`–`5` y anótalo para
-revisión conjunta.
+Para ver cómo se etiquetó antes, filtra la galería por **select-1** (radio
+`select-1` arriba) o abre
+[ejemplos ya en select-1](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=0&class=1&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session).
+
+---
+
+## Ejemplos de aspecto (clasificación de calidad previa)
+
+Antes se usaban etiquetas de **calidad del fold** (clean-fold, scattered, …).
+Ya no hay que ponerlas en gallapp; sirven para entrenar el ojo: qué se ve bien
+y qué se ve regular, pero **aún así** a veces el periodo se marca en `1`–`5`.
+
+### Clean folding
+
+Poca dispersión; los puntos siguen de cerca el modelo de dos picos.
+
+![1985 QP5 — clean folding](examples/1985_QP5_multiband_photometry_compare.webp)
+
+### Scattered folding
+
+Más ruido / χ² alto; la forma de rotación sigue legible.
+
+![1999 XK86 — scattered folding](examples/1999_XK86_multiband_photometry_compare.webp)
+
+### Phase-incomplete
+
+Solo se cubre un tramo de la rotación (huecos grandes en fase).
+
+![1999 GM6 — phase-incomplete](examples/1999_GM6_multiband_photometry_compare.webp)
+
+### Low-amplitude
+
+Amplitud pequeña; la rotación aún se intuye (a menudo rotadores rápidos).
+
+![1999 TJ113 — low-amplitude](examples/1999_TJ113_multiband_photometry_compare.webp)
+
+### Misaligned
+
+Zero-points / colores desordenados (p. ej. una banda muy desviada); la forma
+de rotación puede seguir clara.
+
+![1998 BG25 — misaligned / bandas desalineadas](examples/1998_BG25_multiband_photometry_compare.webp)
+
+### Undersampled
+
+Pocas observaciones o muestreo irregular; el fold es más frágil.
+
+![2001 BN21 — undersampled](examples/2001_BN21_multiband_photometry_compare.webp)
+
+---
+
+## Guardar el trabajo
+
+- Si **siempre usas el mismo navegador** en el mismo equipo, gallapp **guarda
+  la clasificación en la sesión** y al volver deberías ver tus marcas.
+- Si vas a **cambiar de navegador, de máquina o limpiar datos del sitio**,
+  antes de irte pulsa **Export sidecars**: descarga un **ZIP** con las
+  selecciones.
+- En el otro navegador (o tras reiniciar), abre la misma galería y pulsa
+  **Import sidecars** con ese ZIP para recuperar las marcas.
+- Cuando termines un bloque (o el día), exporta otra vez por si acaso.
+  *Download classified (.zip)* también empaqueta lo clasificado para revisión.
+
+---
+
+## Reparto del trabajo (desde la figura 1000)
+
+Los índices **0–999** ya se revisaron. Desde **1000** hasta el final se reparte
+así (abre el enlace de tu fila y avanza con → hasta cubrir tu rango):
+
+| Persona | Rango (índice) | Figuras | Enlace de inicio |
+|---------|----------------|--------:|------------------|
+| Nico | 1000 – 2693 | 1694 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=1000&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
+| Juanita | 2694 – 4387 | 1694 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=2694&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
+| Vale | 4388 – 6081 | 1694 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=4388&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
+| Angie | 6082 – 7774 | 1693 | [Empezar](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=6082&class=all&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session) |
+
+Si dudas en un objeto, déjalo sin `1`–`5` y anótalo para revisión conjunta.
+Al cerrar, **Export sidecars**.
