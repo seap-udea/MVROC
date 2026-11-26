@@ -119,7 +119,7 @@ trabajo es decidir `1`–`5` mirando los paneles.
 Antes de clasificar tu rango, mira ejemplos **ya etiquetados** para calibrar el
 ojo. En gallapp usa el filtro **Classified**, o abre:
 
-[Todas las imágenes clasificadas](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=0&class=x&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session)
+[Todas las imágenes clasificadas](https://seap-udea.github.io/gallapp/?repo=seap-udea%2FMVROC&dir=pipeline%2Foutputs%2Fperiodograms%2Ffigures&session=&multi=true&n=1&class=classified&likes=all&filter=*.*&grid=true&preview=true&strip=66&persist=session)
 (`class=x`).
 
 Ese conjunto mezcla dos cosas distintas:
